@@ -5,6 +5,7 @@ import com.sidis.eas.states.StateVerifier;
 import kotlin.Pair;
 import net.corda.core.contracts.CommandData;
 import net.corda.core.contracts.Contract;
+import net.corda.core.serialization.ConstructorForDeserialization;
 import net.corda.core.serialization.CordaSerializable;
 import net.corda.core.transactions.LedgerTransaction;
 
@@ -20,7 +21,6 @@ public class ServiceContract implements Contract {
         public void verify(LedgerTransaction tx, StateVerifier verifier) throws IllegalArgumentException;
 
         class Common implements ServiceContract.Commands {
-
             @Override
             public void verify(LedgerTransaction tx, StateVerifier verifier) throws IllegalArgumentException {
 
@@ -34,8 +34,8 @@ public class ServiceContract implements Contract {
                             .object();
                     req.using("ID must be the same",
                             service1.getId().equals(service2.getId()));
-                    req.using("client must be the same",
-                            service1.getClient().equals(service2.getClient()));
+                    req.using("initiator must be the same",
+                            service1.getInitiator().equals(service2.getInitiator()));
                     return new Pair<>(service1, service2);
                 });
             }
@@ -79,8 +79,8 @@ public class ServiceContract implements Contract {
                     } else {
                        req.using("service provider must be the same",
                                 service1.getServiceProvider().equals(service2.getServiceProvider()));
-                        req.using("service provider must be different than client",
-                                !service2.getClient().equals(service2.getServiceProvider()));
+                        req.using("service provider must be different than initiator",
+                                !service2.getInitiator().equals(service2.getServiceProvider()));
                     }
                     return null;
                 });
@@ -105,110 +105,95 @@ public class ServiceContract implements Contract {
                     }
                     req.using("service provider must be provided",
                             service2.getServiceProvider() != null);
-                    req.using("service provider must be different than client",
-                            !service2.getClient().equals(service2.getServiceProvider()));
+                    req.using("service provider must be different than initiator",
+                            !service2.getInitiator().equals(service2.getServiceProvider()));
                     return null;
                 });
             }
         }
-        class Withdraw extends Common implements ServiceContract.Commands {
-            @Override
-            public void verify(LedgerTransaction tx, StateVerifier verifier) throws IllegalArgumentException {
-                requireThat(req -> {
+
+        class AnyAction extends Common implements ServiceContract.Commands {
+            private final ServiceState.StateTransition transition;
+            public AnyAction(String transition) {
+                this.transition = ServiceState.StateTransition.valueOf(transition);
+            }
+            @ConstructorForDeserialization
+            public AnyAction(ServiceState.StateTransition transition) {
+                this.transition = transition;
+            }
+            public ServiceState.StateTransition getTransition() {
+                return this.transition;
+            }
+
+            public Pair<ServiceState, ServiceState> verifyAnyAction(LedgerTransaction tx, StateVerifier verifier) throws IllegalArgumentException {
+                return requireThat(req -> {
                     Pair<ServiceState, ServiceState> pair = verify1InOut(tx, verifier);
                     ServiceState service1 = pair.component1();
                     ServiceState service2 = pair.component2();
                     req.using("state must be different",
                             !service1.getState().equals(service2.getState()));
                     req.using("state <"+service2.getState()+"> is not valid next state from <"+service1.getState()+">",
-                            ServiceState.StateTransition.WITHDRAW
+                            this.getTransition()
                                     .getNextStateFrom(service1.getState())
                                     .equals(service2.getState()));
+                    return pair;
+                });
+            }
+        }
+        class ActionBeforeShare extends AnyAction implements ServiceContract.Commands {
+
+            public ActionBeforeShare(String transition) {
+                super(transition);
+            }
+            @ConstructorForDeserialization
+            public ActionBeforeShare(ServiceState.StateTransition transition) {
+                super(transition);
+            }
+
+            @Override
+            public void verify(LedgerTransaction tx, StateVerifier verifier) throws IllegalArgumentException {
+                requireThat(req -> {
+                    Pair<ServiceState, ServiceState> pair = verifyAnyAction(tx, verifier);
+                    ServiceState service1 = pair.component1();
+                    ServiceState service2 = pair.component2();
                     if (service1.getServiceProvider() == null) {
                         req.using("service provider must be both null",
                                 service2.getServiceProvider() == null);
                     } else {
                         req.using("service provider must be the same",
                                 service1.getServiceProvider().equals(service2.getServiceProvider()));
-                        req.using("service provider must be different than client",
-                                !service2.getClient().equals(service2.getServiceProvider()));
+                        req.using("service provider must be different than initiator",
+                                !service2.getInitiator().equals(service2.getServiceProvider()));
                     }
                     return null;
                 });
             }
         }
-        class Accept extends Common implements ServiceContract.Commands {
-            @Override
-            public void verify(LedgerTransaction tx, StateVerifier verifier) throws IllegalArgumentException {
-                requireThat(req -> {
-                    Pair<ServiceState, ServiceState> pair = verify1InOut(tx, verifier);
-                    ServiceState service1 = pair.component1();
-                    ServiceState service2 = pair.component2();
-                    req.using("state must be different",
-                            !service1.getState().equals(service2.getState()));
-                    req.using("state <"+service2.getState()+"> is not valid next state from <"+service1.getState()+">",
-                            ServiceState.StateTransition.ACCEPT
-                                    .getNextStateFrom(service1.getState())
-                                    .equals(service2.getState()));
-                    req.using("service provider must be set",
-                            service1.getServiceProvider() != null);
-                    req.using("service provider must be set",
-                            service2.getServiceProvider() != null);
-                    req.using("service provider must be the same",
-                            service1.getServiceProvider().equals(service2.getServiceProvider()));
-                    req.using("service provider must be different than client",
-                            !service2.getClient().equals(service2.getServiceProvider()));
-                    return null;
-                });
-            }
-        }
-        class Cancel extends Common implements ServiceContract.Commands {
-            @Override
-            public void verify(LedgerTransaction tx, StateVerifier verifier) throws IllegalArgumentException {
-                requireThat(req -> {
-                    Pair<ServiceState, ServiceState> pair = verify1InOut(tx, verifier);
-                    ServiceState service1 = pair.component1();
-                    ServiceState service2 = pair.component2();
-                    req.using("state must be different",
-                            !service1.getState().equals(service2.getState()));
-                    req.using("state <"+service2.getState()+"> is not valid next state from <"+service1.getState()+">",
-                            ServiceState.StateTransition.CANCEL
-                                    .getNextStateFrom(service1.getState())
-                                    .equals(service2.getState()));
-                    req.using("service provider must be set",
-                            service1.getServiceProvider() != null);
-                    req.using("service provider must be set",
-                            service2.getServiceProvider() != null);
-                    req.using("service provider must be the same",
-                            service1.getServiceProvider().equals(service2.getServiceProvider()));
-                    req.using("service provider must be different than client",
-                            !service2.getClient().equals(service2.getServiceProvider()));
-                    return null;
-                });
 
+        class ActionAfterShare extends AnyAction implements ServiceContract.Commands {
+
+            public ActionAfterShare(String transition) {
+                super(transition);
             }
-        }
-        class Decline extends Common implements ServiceContract.Commands {
+            @ConstructorForDeserialization
+            public ActionAfterShare(ServiceState.StateTransition transition) {
+                super(transition);
+            }
+
             @Override
             public void verify(LedgerTransaction tx, StateVerifier verifier) throws IllegalArgumentException {
                 requireThat(req -> {
-                    Pair<ServiceState, ServiceState> pair = verify1InOut(tx, verifier);
+                    Pair<ServiceState, ServiceState> pair = verifyAnyAction(tx, verifier);
                     ServiceState service1 = pair.component1();
                     ServiceState service2 = pair.component2();
-                    req.using("state must be different",
-                            !service1.getState().equals(service2.getState()));
-                    req.using("state <"+service2.getState()+"> is not valid next state from <"+service1.getState()+">",
-                            ServiceState.StateTransition.DECLINE
-                                    .getNextStateFrom(service1.getState())
-                                    .equals(service2.getState()));
                     req.using("service provider must be set",
                             service1.getServiceProvider() != null);
                     req.using("service provider must be set",
                             service2.getServiceProvider() != null);
                     req.using("service provider must be the same",
                             service1.getServiceProvider().equals(service2.getServiceProvider()));
-                    req.using("service provider must be different than client",
-                            !service2.getClient().equals(service2.getServiceProvider()));
+                    req.using("service provider must be different than initiator",
+                            !service2.getInitiator().equals(service2.getServiceProvider()));
                     return null;
                 });
             }

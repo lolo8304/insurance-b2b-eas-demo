@@ -28,11 +28,21 @@ public class ServiceState implements LinearState {
     @CordaSerializable
     public enum State {
         CREATED(StateType.INITIAL),
+        REGISTERED,
+        INFORMED,
+        CONFIRMED,
+
+        TIMEOUTS(StateType.FINAL),
         WITHDRAWN(StateType.FINAL),
-        SHARED(StateType.INITIAL),
-        ACCEPTED,
-        DECLINED(StateType.FINAL),
-        CANCELED(StateType.FINAL);
+
+        SHARED,
+        NOT_SHARED(StateType.FINAL),
+        DUPLICATE(StateType.FINAL),
+
+        PAYMENT_SENT,
+
+        ACCEPTED(StateType.FINAL),
+        DECLINED(StateType.FINAL);
 
         @JsonIgnore
         private StateType type;
@@ -47,21 +57,35 @@ public class ServiceState implements LinearState {
         public boolean isFinalState() { return this.type == StateType.FINAL; }
 
     }
+
     @CordaSerializable
     public enum StateTransition {
         CREATE(State.CREATED),
-        UPDATE(null, State.CREATED, State.SHARED),
-        SHARE(State.SHARED, State.CREATED),
-        WITHDRAW(State.WITHDRAWN, State.CREATED, State.SHARED),
-        ACCEPT(State.ACCEPTED, State.SHARED),
-        DECLINE(State.DECLINED, State.SHARED),
-        CANCEL(State.CANCELED, State.ACCEPTED);
+
+        REGISTER(State.REGISTERED, State.CREATED),
+        INFORM(State.INFORMED,     State.CREATED, State.REGISTERED),
+        CONFIRM(State.CONFIRMED,   State.INFORMED),
+        TIMEOUT(State.TIMEOUTS,    State.INFORMED),
+
+        UPDATE(null,      State.CREATED, State.SHARED),
+
+        SHARE(State.SHARED,         State.CONFIRMED, State.INFORMED, State.REGISTERED, State.CREATED),
+        NO_SHARE(State.NOT_SHARED,  State.CONFIRMED, State.INFORMED, State.REGISTERED, State.CREATED),
+        DUPLICATE(State.DUPLICATE, State.CONFIRMED, State.INFORMED, State.REGISTERED, State.CREATED),
+
+        WITHDRAW(State.WITHDRAWN,   State.CREATED, State.REGISTERED, State.INFORMED, State.CONFIRMED, State.SHARED),
+
+        SEND_PAYMENT(State.PAYMENT_SENT, State.SHARED),
+
+        ACCEPT(State.ACCEPTED,      State.SHARED, State.PAYMENT_SENT),
+        DECLINE(State.DECLINED,     State.SHARED, State.PAYMENT_SENT);
 
         @JsonIgnore
         private State nextState;
         @JsonIgnore
         private State[] currentStates;
         StateTransition(State nextState, @NotNull State... currentStates) {
+            Arrays.sort(currentStates);
             this.currentStates = currentStates;
             this.nextState = nextState;
         }
@@ -70,6 +94,9 @@ public class ServiceState implements LinearState {
             return this.nextState.isFinalState();
         }
         public State getNextStateFrom(State from) throws IllegalStateException {
+            if (from.isFinalState()) {
+                throw new IllegalStateException("state <"+from+"> is final state and cannot be transitioned");
+            }
             if (Arrays.binarySearch(this.currentStates, from) >= 0) {
                 return this.nextState != null ? this.nextState : from;
             }
@@ -92,7 +119,7 @@ public class ServiceState implements LinearState {
     private final String serviceName;
     @JsonIgnore
     @NotNull
-    private final Party client;
+    private final Party initiator;
 
 
     @NotNull
@@ -102,11 +129,11 @@ public class ServiceState implements LinearState {
     private final Integer price;
 
     @ConstructorForDeserialization
-    public ServiceState(@NotNull UniqueIdentifier id, @NotNull String serviceName, @NotNull Party client, @NotNull State state, Map<String, Object> serviceData, Party serviceProvider, Integer price) {
+    public ServiceState(@NotNull UniqueIdentifier id, @NotNull String serviceName, @NotNull Party initiator, @NotNull State state, Map<String, Object> serviceData, Party serviceProvider, Integer price) {
         this.id = id;
         this.state = state;
         this.serviceName = serviceName;
-        this.client = client;
+        this.initiator = initiator;
         this.serviceData = serviceData == null ? new LinkedHashMap<>() : serviceData;
         this.serviceProvider = serviceProvider;
         this.price = price;
@@ -123,7 +150,7 @@ public class ServiceState implements LinearState {
     @Override
     public List<AbstractParty> getParticipants() {
         List<AbstractParty> list = new ArrayList<>();
-        list.add(this.client);
+        list.add(this.initiator);
         if (this.serviceProvider != null) list.add(this.serviceProvider);
         return list;
     }
@@ -143,8 +170,8 @@ public class ServiceState implements LinearState {
         return serviceName;
     }
     @NotNull
-    public Party getClient() {
-        return client;
+    public Party getInitiator() {
+        return initiator;
     }
     @NotNull
     public State getState() { return state; }
@@ -154,8 +181,8 @@ public class ServiceState implements LinearState {
 
 
     @NotNull
-    public String getClientX500() {
-        return client.getName().getX500Principal().getName();
+    public String getInitiatorX500() {
+        return initiator.getName().getX500Principal().getName();
     }
     public String getServiceProviderX500() {
         return serviceProvider != null ? serviceProvider.getName().getX500Principal().getName() : "";
@@ -169,8 +196,8 @@ public class ServiceState implements LinearState {
 
 
     /* actions CREATE */
-    public static ServiceState create(@NotNull UniqueIdentifier id, @NotNull String serviceName, @NotNull Party client, Map<String, Object> serviceData) {
-        return new ServiceState(id, serviceName, client, StateTransition.CREATE.getInitialState(), serviceData, null, null);
+    public static ServiceState create(@NotNull UniqueIdentifier id, @NotNull String serviceName, @NotNull Party initiator, Map<String, Object> serviceData) {
+        return new ServiceState(id, serviceName, initiator, StateTransition.CREATE.getInitialState(), serviceData, null, null);
     }
     /* actions UPDATE */
     public ServiceState update(Map<String, Object> newServiceData) {
@@ -178,32 +205,20 @@ public class ServiceState implements LinearState {
     }
     public ServiceState update(Map<String, Object> newServiceData, Integer newPrice) {
         State newState = StateTransition.UPDATE.getNextStateFrom(this.state);
-        return new ServiceState(this.id, this.serviceName, this.client, newState, newServiceData, this.serviceProvider, newPrice);
+        return new ServiceState(this.id, this.serviceName, this.initiator, newState, newServiceData, this.serviceProvider, newPrice);
     }
+
     /* actions SHARE */
     public ServiceState share(@NotNull Party newServiceProvider) {
         State newState = StateTransition.SHARE.getNextStateFrom(this.state);
-        return new ServiceState(this.id, this.serviceName, this.client, newState, this.serviceData, newServiceProvider, this.price);
+        return new ServiceState(this.id, this.serviceName, this.initiator, newState, this.serviceData, newServiceProvider, this.price);
     }
-    /* actions WITHDRAW */
-    public ServiceState withdraw() {
-        State newState = StateTransition.WITHDRAW.getNextStateFrom(this.state);
-        return new ServiceState(this.id, this.serviceName, this.client, newState, this.serviceData, this.serviceProvider, this.price);
-    }
-    /* actions ACCEPT */
-    public ServiceState accept() {
-        State newState = StateTransition.ACCEPT.getNextStateFrom(this.state);
-        return new ServiceState(this.id, this.serviceName, this.client, newState, this.serviceData, this.serviceProvider, this.price);
-    }
-    /* actions DECLINE */
-    public ServiceState decline() {
-        State newState = StateTransition.DECLINE.getNextStateFrom(this.state);
-        return new ServiceState(this.id, this.serviceName, this.client, newState, this.serviceData, this.serviceProvider, this.price);
-    }
-    /* actions CANCEL */
-    public ServiceState cancel() {
-        State newState = StateTransition.CANCEL.getNextStateFrom(this.state);
-        return new ServiceState(this.id, this.serviceName, this.client, newState, this.serviceData, this.serviceProvider, this.price);
+
+
+    /* actions any */
+    public ServiceState withAction(StateTransition transition) {
+        State newState = transition.getNextStateFrom(this.state);
+        return new ServiceState(this.id, this.serviceName, this.initiator, newState, this.serviceData, this.serviceProvider, this.price);
     }
 
 }
