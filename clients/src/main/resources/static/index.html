@@ -1,0 +1,111 @@
+<html>
+<head>
+    <!-- jquery  -->
+    <script
+        src="https://code.jquery.com/jquery-3.3.1.min.js"
+        integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+        crossorigin="anonymous"></script>
+
+    <!-- js grid plugin  -->
+    <link type="text/css" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jsgrid/1.5.3/jsgrid.min.css" />
+    <link type="text/css" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jsgrid/1.5.3/jsgrid-theme.min.css" />
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jsgrid/1.5.3/jsgrid.min.js"></script>
+
+    <!-- js views  -->
+    <script src="https://www.jsviews.com/download/jsviews.min.js"></script>
+    <link href="https://www.jsviews.com/samples/samples.css" rel="stylesheet" />
+
+    <script src="sidis-eas.js"></script>
+    <style>
+        .jsgrid-cell {
+            padding: .1em;
+            vertical-align: top;
+        }
+        .jsgrid-header-cell {
+            padding: .1em;
+        }
+        .jsgrid-edit-row input {
+          padding: .8em .8em;
+        }
+        #runningAnimation {
+            display: none;
+            margin: -150px;
+        }
+
+        .STATUS {
+            color: white;
+            padding: 5px;
+        }
+
+        .REQUESTED {
+            background-color: blue;
+        }
+        .ACCEPTED {
+            background-color: green;
+        }
+        .DENIED {
+            background-color: red;
+        }
+        .WITHDRAWN {
+            background-color: lightcoral;
+        }
+.tableTop {
+    display:table;
+}
+.headerTop {
+    display:table-header-group;
+    font-weight:bold;
+}
+.rowTop {
+    display:table-row;
+}
+.rowGroupTop {
+    display:table-row-group;
+}
+.cellTopLeft {
+    display:table-cell;
+    width:100%;
+    vertical-align: middle;
+}
+.cellTopRight {
+    display:table-cell;
+    width:100%;
+    vertical-align: middle;
+}
+
+    </style>
+</head>
+<body>
+<h1>
+    <div class="tableTop">
+        <div class="rowGroupTop">
+            <div class="rowTop">
+                <div class="cellTopLeft"><span id="party_me">Node</span> <A HREF="javascript:history.go(0)">refresh</A> <A HREF="demo.html?frames=10801,10802,10803+10804">demo</A> <img src="spinner.gif" id="runningAnimation"></img></div>
+                <div class="cellTopRight"><span id="image_me"></span></div>
+            </div>
+        </div>
+    </div>
+
+</h1>
+
+<span id="patient-record_block" style="display:block">
+<h3>Patient-record <span id="patient-record-new" style="display:none"></span></h3>
+<div id="patient-record-template"></div>
+</span>
+<span id="share-data_block">
+<h3>Services</h3>
+<div id="share-data-template"></div>
+</span>
+<span id="share-data-new" style="display:none">
+    <a href="#" onClick='saveDummyService(this, "Tele Medicine", "B", 25, "medical-history")'>B34</a>
+    <a href="#" onClick='saveDummyService(this, "Tele Medicine", "B", 0, "medical-history")'>B1?</a>
+    <a href="#" onClick='saveDummyService(this, "Tele Medicine", "B", 0, "medical-history,immunizations")'>B2?</a>
+    <a href="#" onClick='saveDummyService(this, "Tele Medicine", "B", 0, "medical-history,immunizations,genetics")'>B3?</a>
+    <a href="#" onClick='saveDummyService(this, "Tele Medicine", "B", 0, "medical-history,medication,immunizations,genetics")'>B4?</a>
+    <a href="#" onClick='saveDummyService(this, "Nutrition Consultation", "N", 0, "body-vitals")'>N1?</a>
+    <a href="#" onClick='saveDummyService(this, "Nutrition Consultation", "N", 53, "body-vitals,nutrition")'>N2?</a>
+    <a href="#" onClick='saveDummyService(this, "Nutrition Consultation", "N", 0, "body-vitals,nutrition,ongoingConditions")'>N3?</a>
+</span>
+
+</body>
+</html>

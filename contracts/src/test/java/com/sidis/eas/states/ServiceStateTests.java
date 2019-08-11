@@ -1,0 +1,57 @@
+package com.sidis.eas.states;
+
+import com.sidis.eas.SidisBaseTests;
+import net.corda.core.contracts.UniqueIdentifier;
+import org.junit.Assert;
+import org.junit.Test;
+
+public class ServiceStateTests extends SidisBaseTests {
+    @Override
+    public void setup() {
+        this.setup(false);
+    }
+
+    @Override
+    public void tearDown() {
+        super.tearDown();
+    }
+
+
+    public static String dataJSONString() {
+        return "{ \"insurance-branch\" : \"health\", \"coverages\" : { \"OKP\" : true, \"ZVP\" : false } }";
+    }
+    public static String dataUpdateJSONString() {
+        return "{ \"insurance-branch\" : \"health\", \"coverages\" : { \"OKP\" : true, \"ZVP\" : true, \"ADD-ON1\" : true } }";
+    }
+    public static String dataUpdateAfterShareJSONString() {
+        return "{ \"insurance-branch\" : \"health\", \"coverages\" : { \"OKP\" : true, \"ZVP\" : true, \"ADD-ON1\" : true, \"UW\" : true } }";
+    }
+
+
+    @Test
+    public void test_create() {
+        ServiceState service = ServiceState.create(
+                new UniqueIdentifier(),
+                "insurance",
+                this.insurer1Party,
+                JsonHelper.convertStringToJson(dataJSONString()));
+        Assert.assertEquals("state must be CREATED",
+                ServiceState.State.CREATED, service.getState());
+    }
+    @Test
+    public void test_update_after_create() {
+        ServiceState service = ServiceState.create(
+                new UniqueIdentifier(),
+                "insurance",
+                this.insurer1Party,
+                JsonHelper.convertStringToJson(dataJSONString()));
+        ServiceState serviceUpdated = service.update(JsonHelper.convertStringToJson(dataUpdateJSONString()));
+        Assert.assertEquals("state must be still CREATED",
+                ServiceState.State.CREATED, service.getState());
+        Assert.assertEquals("old ZVP value must be false",
+                "false", JsonHelper.getDataValue(service.getServiceData(), "coverages.ZVP"));
+        Assert.assertEquals("old ZVP value must be true",
+                "true", JsonHelper.getDataValue(serviceUpdated.getServiceData(), "coverages.ZVP"));
+    }
+
+}
