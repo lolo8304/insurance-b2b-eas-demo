@@ -97,35 +97,6 @@ function saveDummyPatientRecord(self, method){
 }
 
 
-function saveDummyServiceOld(self, service, spShort, price, optionalIds){
-    var insurer = "O=AXA Leben AG,L=Winterthur,ST=ZH,C=CH";
-    var serviceProvider = (spShort == "B") ? "O=FZL,L=Zug,ST=ZG,C=CH" : "O=Swisscanto Pensions Ltd.,L=Zurich,ST=ZH,C=CH";
-    if (price == 0) {
-        var priceString = prompt("Enter a price", "12" );
-        var p = parseInt(priceString, 10);
-        if (p > 0) {
-            price = p;
-        } else {
-            return;
-        }
-    }
-    stopRefresh();
-    $.ajax(
-        {
-            url: MAIN_URL+"/api/v1/sidis/eas/services/",
-            method: "POST",
-            headers: {
-                "Content-Type" : "application/x-www-form-urlencoded"
-            },
-            data: "service-name="+encodeURI(service)+"&insurance="+encodeURI(insurer)+"&service-provider="+encodeURI(serviceProvider)+"&mandatory-ids=person&optional-ids="+encodeURI(optionalIds)+"&additional-data="+encodeURI("{}")+"&price="+price
-        }
-    ).done(function(result) {
-        forceRefreshGrids()
-    }).fail(function(jqXHR, textStatus) {
-        alert(jqXHR.responseText);
-        forceRefreshGrids();
-    });
-}
 
 function saveDummyService(self, service, spShort, price, optionalIds){
     stopRefresh();
@@ -136,7 +107,7 @@ function saveDummyService(self, service, spShort, price, optionalIds){
             headers: {
                 "Content-Type" : "application/x-www-form-urlencoded"
             },
-            data: "service-name="+encodeURI(service)+"&data="+encodeURI("{}")
+            data: "service-name="+encodeURI(service)+"&data="+encodeURI(getServiceData())
         }
     ).done(function(result) {
         forceRefreshGrids()
@@ -151,125 +122,10 @@ function saveDummyService(self, service, spShort, price, optionalIds){
 function getPatientDemo() {
     return "{\"person\":{\"firstName\":\"John\",\"lastName\":\"Doe\",\"dateOfBirth\":\"1993-09-13\",\"sex\":\"male\"},\"address\":{\"street\":\"NE 29th Place\",\"city\":\"Bellevue\",\"zip\":\"14615\",\"state\":\"WA\",\"country\":\"USA\"},\"communication\":{\"email\":\"john.doe@random.com\",\"phone\":\"(541) 754-3010\",\"mobile\":\"1-541-754-3010\"},\"body-vitals\":{\"bloodType\":\"A+\",\"weight\":\"238 lb\",\"height\":\"6ft 2in\",\"bmi\":\"31.3\",\"bodyFat\":\"0.218\",\"muscleMass\":\"0.25\",\"hipSize\":\"33in\",\"bodyTemperature\":[98],\"heartRate\":[80],\"bloodPressure\":[130],\"respiratoryRate\":[27],\"sleepingBehaviour\":{},\"pedometer/Day\":[6000]},\"nutrition\":{\"foodAllergies\":[\"egg\",\"nuts\"],\"caloriesPerDay\":[2700],\"diets\":[],\"macroPerDay\":[700],\"microPerDay\":[200]},\"allergies\":{\"types\":[\"hayfever\",\"alergic asthma\"]},\"genetics\":{\"investigations\":[\"geneticTest200610\",\"geneticTest151015\"]},\"medical-history\":{},\"medication\":[{\"drugName\":\"Aspirin\",\"isTakenPeriodically\":true}],\"ongoingConditions\":[\"Diabetes\"],\"immunizations\":{\"types\":[\"measles\",\"smallpox\"]},\"wallet\":{\"ethereum\":\"0x049A17DE00c70e7dBfE5A71b8B529D89ce1365Fa\",\"token\":\"d\",\"token-updated-by\":\"Initial\"}}";
 }
-
-
-
-function show_patient_records(tagName, result) {
-
-    if (ME == "John Doe") {
-        if (result != null && result.length < 2) {
-            var method = result.length == 0 ? "POST" : "PUT";
-            $( "#patient-record-new" ).html(
-                " <a id='patient-dummy' href='#' onClick='saveDummyPatientRecord(this, \""+method+"\")'>init record</a>"
-            );
-            $( "#patient-record-new" ).css({"display": "block"});
-        }
-     } else {
-            $( "#patient-record_block" ).css({"display": "none"});
-     }
-
-    $(tagName).jsGrid({
-        height: "auto",
-        width: "100%",
-
-        sorting: true,
-        paging: false,
-        selecting: false,
-        filtering: false,
-        autoload: true,
-
-        data: result,
-
-        fields: [
-
-            /*
-               person: {
-                firstName: "John",
-                lastName: "Doe",
-                dateOfBirth: "1993-09-13",
-                sex: "male"
-
-                address
-                    street: "NE 29th Place",
-                   city: "Bellevue",
-                   zip: "14615",
-                   state: "WA",
-                   country: "USA" "
-
-                   */
-
-            /*
-            body stats
-
-            body-vitals: {
-               bloodType: "A+",
-               weight: "238 lb",
-               height: "6ft 2in", "/
-
-              /*
-              nutrition: {
-              foodAllergies: [
-              "egg",
-              "nuts"
-              ],
-
-
-
-              body condition
-
-              allergies: {
-              types: [
-              "hayfever",
-              "alergic asthma"
-              ]
-
-              medication: [
-              {
-              drugName: "Aspirin",
-              isTakenPeriodically: true
-              }
-
-              immunizations: {
-                types: [
-                "measles",
-                "smallpox"
-                ]
-
-              */
-            { title: "Person data", name: "dataObject", type: "text", itemTemplate: function(value, item) {
-                var p = value.person;
-                var a = value.address;
-                 return p.firstName+" "+p.lastName+", "+p.dateOfBirth+", "+p.sex
-                    + "<br><br>"
-                    + a.street+", "+a.city+" "+a.state+", "+a.zip+", "+a.country;
-                }
-            },
-            { title: "body stats", name: "dataObject", type: "text", itemTemplate: function(value, item) {
-                var vitals = value["body-vitals"] || value["body vitals"] ;
-                var nutrition = value["nutrition"];
-                 return vitals.bloodType+"<br>"+vitals.weight+", "+vitals.height
-                    + "<br><br>"
-                    + "foodAllergies: "+nutrition.foodAllergies.join(", ");
-                }
-            },
-            { title: "body condition", name: "dataObject", type: "text", itemTemplate: function(value, item) {
-                 return "allergies: "+value.allergies.types.join(", ")
-                    + "<br><br>"
-                    + "medication: "+value.medication.map(x => x.drugName).join(", ")
-                    + "<br><br>"
-                    + "immunizations: "+value.immunizations.types.join(", ");
-                }
-            },
-            { title: "Link", name: "id", type: "text", align: "center", width: 30, itemTemplate: function(value, item) {
-                var link1 = "<a target='_blank' href='"+MAIN_URL+"/api/v1/sidis/eas/patient-records/"+value.id+"'>o</a>";
-                var json = item.dataObject.wallet.token;
-                return link1 +
-                    " <a id='token' value='"+json+"' href='#' onClick='editTemplateData(this)'>t</a>";
-               }
-            }
-        ]
-    });
+function getServiceData() {
+    return "{\"test\": \"42\"}";
 }
+
 
 function strongS(i) {
     return (i < 10 ? "<strong>" : "");
@@ -279,7 +135,7 @@ function strongE(i) {
 }
 
 
-function show_shared_data(tagName, result) {
+function show_services(tagName, result) {
     var i = 0;
     $(tagName).jsGrid({
         height: "auto",
@@ -299,22 +155,24 @@ function show_shared_data(tagName, result) {
               */
             { title: "Service", name: "serviceName", type: "text", itemTemplate: function(value, item) {
                  i = i + 1;
-                 return strongS(i)+item.serviceName +"<br>$ "+item.price+strongE(i);
+                 return strongS(i)+item.serviceName +"<br>"+price(item.price) + strongE(i);
                 }
             },
             { title: "Roles", name: "", type: "text", width: 150, itemTemplate: function(value, item) {
                  i = i + 1;
-                 return strongS(i)+"P: "+X500toO(item.patientX500)
-                    +"<br>I: "+X500toO(item.insurerX500)
+                 return strongS(i)+"I: "+X500toO(item.initiatorX500)
                     +"<br>SP: "+X500toO(item.serviceProviderX500)+strongE(i);
                 }
             },
-            { title: "permissions", name: "mandatoryData", type: "text", itemTemplate: function(value, item) {
+            { title: "State", name: "state", type: "text", itemTemplate: function(value, item) {
                  i = i + 1;
-                var mandatory = Object.keys(item.mandatoryData).map(x => x+"(*)");
-                var optional = Object.keys(item.optionalData);
-                var permission = [...mandatory, ...optional];
-                return strongS(i)+permission.join("<br>")+strongE(i);
+                 return strongS(i)+value+strongE(i);
+                }
+            },
+            { title: "Data", name: "serviceData", type: "text", itemTemplate: function(value, item) {
+                 i = i + 1;
+                var data = Object.keys(value);
+                return strongS(i)+data.join("<br>")+strongE(i);
                 }
             },
             { title: "Link", name: "id", type: "text", align: "center", width: 30, itemTemplate: function(value) {
@@ -328,12 +186,19 @@ function show_shared_data(tagName, result) {
 
 
 function X500toOL(x500) {
+    if (x500 == null || x500 == "") return "";
     var DNs = x500.split(/[,=]/)
     return DNs[1]+", "+DNs[3]
 }
 function X500toO(x500) {
+    if (x500 == null || x500 == "") return "";
     var DNs = x500.split(/[,=]/)
     return DNs[1];
+}
+
+function price(price) {
+    if (price == null) return "";
+    return "CHF "+price;
 }
 
 
@@ -365,18 +230,10 @@ $(document).ready(function(){
 
 
     $.get({
-        url: MAIN_URL+"/api/v1/sidis/eas/patient-records/",
+        url: MAIN_URL+"/api/v1/sidis/eas/services/",
         data: { },
         success: function( result ) {
-            show_patient_records("#patient-record-template", result);
-        }
-    });
-
-    $.get({
-        url: MAIN_URL+"/api/v1/sidis/eas/share-data/",
-        data: { },
-        success: function( result ) {
-            show_shared_data("#share-data-template", result);
+            show_services("#services-template", result);
         }
     });
 
