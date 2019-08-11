@@ -47,10 +47,10 @@ if [ "$retval" -eq $max_nof ]; then
 	exit 0
 fi
 
-nohup $CORDA_HOME/gradlew runInsurance1Server >> nohup-insurance1.out 2>/dev/null &
-nohup $CORDA_HOME/gradlew runInsurance2Server >> nohup-insurance2.out 2>/dev/null &
-nohup $CORDA_HOME/gradlew runFzl1Server >> nohup-fzl1.out 2>/dev/null &
-nohup $CORDA_HOME/gradlew runFzl2Server >> nohup-fzl2.out 2>/dev/null &
+nohup $CORDA_HOME/gradlew runWebserver1 >> nohup-runWebserver1.out 2>/dev/null &
+nohup $CORDA_HOME/gradlew runWebserver2 >> nohup-runWebserver2.out 2>/dev/null &
+nohup $CORDA_HOME/gradlew runWebserver3 >> nohup-runWebserver3.out 2>/dev/null &
+nohup $CORDA_HOME/gradlew runWebserver4 >> nohup-runWebserver4.out 2>/dev/null &
 
 echo "Wait 20s to spin up first log files"
 sleep 20s

@@ -1,5 +1,6 @@
 #!/bin/bash
 BASEDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+. BASEDIR/env.sh
 
 stopped=
 checkPorts(){
@@ -14,11 +15,11 @@ checkPorts(){
 	fi
 }
 
-checkPorts 10103 Notary
-checkPorts 10106 Swiss
-checkPorts 10109 AXA
-checkPorts 10112 FZL
-checkPorts 10115 Swisscanto
+checkPorts 10103 $NodeName0
+checkPorts 10106 $NodeName1
+checkPorts 10109 $NodeName2
+checkPorts 10112 $NodeName3
+checkPorts 10115 $NodeName4
 
 retval=${stopped}
 
