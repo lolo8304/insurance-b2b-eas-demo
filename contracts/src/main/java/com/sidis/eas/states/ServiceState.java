@@ -221,4 +221,8 @@ public class ServiceState implements LinearState {
         return new ServiceState(this.id, this.serviceName, this.initiator, newState, this.serviceData, this.serviceProvider, this.price);
     }
 
+    public String getData(String keys) {
+        return JsonHelper.getDataValue(this.getServiceData(), keys);
+    }
+
 }

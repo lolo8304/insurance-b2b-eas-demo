@@ -97,7 +97,7 @@ function saveDummyPatientRecord(self, method){
 }
 
 
-function saveDummyService(self, service, spShort, price, optionalIds){
+function saveDummyServiceOld(self, service, spShort, price, optionalIds){
     var insurer = "O=AXA Leben AG,L=Winterthur,ST=ZH,C=CH";
     var serviceProvider = (spShort == "B") ? "O=FZL,L=Zug,ST=ZG,C=CH" : "O=Swisscanto Pensions Ltd.,L=Zurich,ST=ZH,C=CH";
     if (price == 0) {
@@ -112,12 +112,31 @@ function saveDummyService(self, service, spShort, price, optionalIds){
     stopRefresh();
     $.ajax(
         {
-            url: MAIN_URL+"/api/v1/sidis/eas/share-data/",
+            url: MAIN_URL+"/api/v1/sidis/eas/services/",
             method: "POST",
             headers: {
                 "Content-Type" : "application/x-www-form-urlencoded"
             },
             data: "service-name="+encodeURI(service)+"&insurance="+encodeURI(insurer)+"&service-provider="+encodeURI(serviceProvider)+"&mandatory-ids=person&optional-ids="+encodeURI(optionalIds)+"&additional-data="+encodeURI("{}")+"&price="+price
+        }
+    ).done(function(result) {
+        forceRefreshGrids()
+    }).fail(function(jqXHR, textStatus) {
+        alert(jqXHR.responseText);
+        forceRefreshGrids();
+    });
+}
+
+function saveDummyService(self, service, spShort, price, optionalIds){
+    stopRefresh();
+    $.ajax(
+        {
+            url: MAIN_URL+"/api/v1/sidis/eas/services/",
+            method: "POST",
+            headers: {
+                "Content-Type" : "application/x-www-form-urlencoded"
+            },
+            data: "service-name="+encodeURI(service)+"&data="+encodeURI("{}")
         }
     ).done(function(result) {
         forceRefreshGrids()
@@ -261,10 +280,6 @@ function strongE(i) {
 
 
 function show_shared_data(tagName, result) {
-    if (ME == "John Doe") {
-        $( "#share-data-new" ).css({"display": "block"});
-     }
-
     var i = 0;
     $(tagName).jsGrid({
         height: "auto",

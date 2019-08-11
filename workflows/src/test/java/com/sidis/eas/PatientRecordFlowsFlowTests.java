@@ -36,7 +36,7 @@ public class PatientRecordFlowsFlowTests extends SidisBaseFlowTests {
                 .one(PatientRecordState.class)
                 .object();
 
-        Assert.assertEquals("john doe", insurer1Node, patientRecord.getPatient());
+        Assert.assertEquals("Swiss Life Ltd", insurer1Party, patientRecord.getPatient());
     }
 
 

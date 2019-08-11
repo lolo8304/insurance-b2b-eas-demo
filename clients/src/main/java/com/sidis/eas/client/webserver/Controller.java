@@ -1,6 +1,8 @@
 package com.sidis.eas.client.webserver;
 
+import com.sidis.eas.flows.ServiceFlow;
 import com.sidis.eas.states.JsonHelper;
+import com.sidis.eas.states.ServiceState;
 import com.sidis.eas.states.StateVerifier;
 import com.sidis.eas.flows.PatientRecordCreateFlow;
 import com.sidis.eas.flows.PatientRecordPatchFlow;
@@ -73,33 +75,33 @@ public class Controller {
     }
 
     /**
-     * returns the patient records that exist in the node's vault.
+     * returns all unconsumed services that exist in the node's vault.
      */
-    @GetMapping(value = BASE_PATH + "/patient-records", produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<PatientRecordState> getPatientRecords() {
-        List<PatientRecordState> states = proxy.vaultQuery(PatientRecordState.class).getStates()
+    @GetMapping(value = BASE_PATH + "/services", produces = MediaType.APPLICATION_JSON_VALUE)
+    public List<ServiceState> getServices() {
+        List<ServiceState> states = proxy.vaultQuery(ServiceState.class).getStates()
                 .stream().map(state -> state.getState().getData()).collect(toList());
         return states;
     }
 
     /**
-     * receives a mandate that exist with a given ID from the node's vault.
+     * receives a unconsumed service with a given ID from the node's vault.
      * @param id unique identifier as UUID for mandate
      */
     @RequestMapping(
-            value = BASE_PATH + "/patient-records/{id}",
+            value = BASE_PATH + "/services/{id}",
             method = RequestMethod.GET,
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     @ResponseBody
-    public PatientRecordState getPatientRecord(@PathVariable("id") String id) {
+    public ServiceState getUnconsumedServiceById(@PathVariable("id") String id) {
         UniqueIdentifier uid = new UniqueIdentifier(null, UUID.fromString(id));
         QueryCriteria queryCriteria = new QueryCriteria.LinearStateQueryCriteria(
                 null,
                 Arrays.asList(uid),
-                Vault.StateStatus.ALL,
+                Vault.StateStatus.UNCONSUMED,
                 null);
-        List<PatientRecordState> states = proxy.vaultQueryByCriteria(queryCriteria, PatientRecordState.class)
+        List<ServiceState> states = proxy.vaultQueryByCriteria(queryCriteria, ServiceState.class)
                 .getStates().stream().map(state -> state.getState().getData()).collect(toList());
         return states.isEmpty() ? null : states.get(states.size()-1);
     }
@@ -109,15 +111,17 @@ public class Controller {
      * @param data string contains json patient data
      */
     @RequestMapping(
-            value = BASE_PATH + "/patient-records",
+            value = BASE_PATH + "/services",
             method = RequestMethod.POST,
             consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
-    public ResponseEntity<PatientRecordState> createPatientRecord(@RequestParam String data) {
+    public ResponseEntity<ServiceState> createService(
+            @RequestParam(name = "service-name", required = true) String serviceName,
+            @RequestParam(name = "data", required = false) String data) {
         try {
             if (data == null || JsonHelper.convertStringToJson(data) == null) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+                data = "{}";
             }
         } catch (IllegalStateException ex) {
             logger.error(ex.getMessage());
@@ -125,104 +129,20 @@ public class Controller {
         }
         try {
             final SignedTransaction signedTx = proxy
-                    .startTrackedFlowDynamic(PatientRecordCreateFlow.Initiator.class,
+                    .startTrackedFlowDynamic(ServiceFlow.Create.class,
+                            serviceName,
                             data)
                     .getReturnValue()
                     .get();
 
             StateVerifier verifier = StateVerifier.fromTransaction(signedTx, null);
-            PatientRecordState patientRecord = verifier.output().one(PatientRecordState.class).object();
+            ServiceState service = verifier.output().one(ServiceState.class).object();
             /*
             URI acceptLink = this.link("mandates", mandate.getId(), "accept");
             URI denyLink = this.link("mandates", mandate.getId(), "deny");
             URI withdrawLink = this.link("mandates", mandate.getId(), "withdraw");
             */
-            return ResponseEntity.status(HttpStatus.CREATED).body(patientRecord);
-
-        } catch (Throwable ex) {
-            final String msg = ex.getMessage();
-            logger.error(ex.getMessage(), ex);
-            return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body(null);
-        }
-    }
-
-    /**
-     * udpate an existing patient record with given data
-     * @param data string contains json patient data
-     */
-    @RequestMapping(
-            value = BASE_PATH + "/patient-records",
-            method = RequestMethod.PUT,
-            consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ResponseBody
-    public ResponseEntity<PatientRecordState> updatePatientRecord(@RequestParam String data) {
-        try {
-            if (data == null || JsonHelper.convertStringToJson(data) == null) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
-            }
-        } catch (IllegalStateException ex) {
-            logger.error(ex.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
-        }
-        try {
-            final SignedTransaction signedTx = proxy
-                    .startTrackedFlowDynamic(PatientRecordUpdateFlow.Initiator.class,
-                            data)
-                    .getReturnValue()
-                    .get();
-
-            StateVerifier verifier = StateVerifier.fromTransaction(signedTx, null);
-            PatientRecordState patientRecordOutput = verifier.output().one(PatientRecordState.class).object();
-            /*
-            URI acceptLink = this.link("mandates", mandate.getId(), "accept");
-            URI denyLink = this.link("mandates", mandate.getId(), "deny");
-            URI withdrawLink = this.link("mandates", mandate.getId(), "withdraw");
-            */
-            return ResponseEntity.status(HttpStatus.OK).body(patientRecordOutput);
-
-        } catch (Throwable ex) {
-            final String msg = ex.getMessage();
-            logger.error(ex.getMessage(), ex);
-            return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body(null);
-        }
-    }
-
-
-    /**
-     * patch / append the patient record with given data
-     * @param data string contains json patient data to be added / updated
-     */
-    @RequestMapping(
-            value = BASE_PATH + "/patient-records",
-            method = RequestMethod.PATCH,
-            consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ResponseBody
-    public ResponseEntity<PatientRecordState> patchPatientRecord(@RequestParam String data) {
-        try {
-            if (data == null || JsonHelper.convertStringToJson(data) == null) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
-            }
-        } catch (IllegalStateException ex) {
-            logger.error(ex.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
-        }
-        try {
-            final SignedTransaction signedTx = proxy
-                    .startTrackedFlowDynamic(PatientRecordPatchFlow.Initiator.class,
-                            data)
-                    .getReturnValue()
-                    .get();
-
-            StateVerifier verifier = StateVerifier.fromTransaction(signedTx, null);
-            PatientRecordState patientRecordOutput = verifier.output().one(PatientRecordState.class).object();
-            /*
-            URI acceptLink = this.link("mandates", mandate.getId(), "accept");
-            URI denyLink = this.link("mandates", mandate.getId(), "deny");
-            URI withdrawLink = this.link("mandates", mandate.getId(), "withdraw");
-            */
-            return ResponseEntity.status(HttpStatus.OK).body(patientRecordOutput);
+            return ResponseEntity.status(HttpStatus.CREATED).body(service);
 
         } catch (Throwable ex) {
             final String msg = ex.getMessage();

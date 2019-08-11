@@ -42,18 +42,18 @@ abstract public class SidisBaseTests {
         this.setup(withNodes, null);
 
     }
-    public void setup(boolean withNodes, Class<? extends FlowLogic> responderClass) {
+    public void setup(boolean withNodes, Class<? extends FlowLogic> ...responderClasses) {
 
         if (withNodes) {
             network = new MockNetwork(new MockNetworkParameters(ImmutableList.of(
                     TestCordapp.findCordapp("com.sidis.eas.contracts")
             )));
             insurer1Node = network.createPartyNode(insurer1ID.getName());
-            if (responderClass != null) insurer1Node.registerInitiatedFlow(responderClass);
+            this.registerResponders(insurer1Node, responderClasses);
             insurer2Node = network.createPartyNode(insurer2ID.getName());
-            if (responderClass != null) insurer2Node.registerInitiatedFlow(responderClass);
+            this.registerResponders(insurer2Node, responderClasses);
             fzl1Node = network.createPartyNode(fzl1ID.getName());
-            if (responderClass != null) fzl1Node.registerInitiatedFlow(responderClass);
+            this.registerResponders(fzl1Node, responderClasses);
 
             insurer1Party = insurer1Node.getInfo().getLegalIdentities().get(0);
             insurer2Party = insurer2Node.getInfo().getLegalIdentities().get(0);
@@ -82,6 +82,14 @@ abstract public class SidisBaseTests {
 
 
 
+    }
+
+    private void registerResponders(StartedMockNode partyNode, Class<? extends FlowLogic>[] responderClasses) {
+        if (responderClasses != null) {
+            for (Class<? extends FlowLogic> responderClass: responderClasses) {
+                partyNode.registerInitiatedFlow(responderClass);
+            }
+        }
     }
 
     @After
