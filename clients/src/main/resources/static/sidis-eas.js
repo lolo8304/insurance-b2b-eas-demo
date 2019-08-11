@@ -17,7 +17,7 @@ var local = GETvar("local");
 MAIN_URL="";
 if (port != null) {
     if (local != null) {
-        MAIN_URL = "http://138.91.144.40:"+port
+        MAIN_URL = "http://localhost:"+port
     } else {
         MAIN_URL = document.location.protocol + "//" + document.location.hostname + ":" + port
     }
@@ -339,7 +339,7 @@ $(document).ready(function(){
             var O=x500name[0].split("=")[1];
             var L=x500name[1].split("=")[1];
             var C=x500name[2].split("=")[1];
-            var imageName = O.trim().replace(/ /g, '_').toLowerCase();
+            var imageName = O.trim().replace(/[ ]/g, '_').replace(/[,\.]/g, '').toLowerCase();
             $( "#party_me" ).html( O+", "+L+" ("+C+")" );
             $( "#image_me" ).html( "<img style=\"width:80px\" src=\""+imageName+".jpeg\"/>" );
             ME = O;
