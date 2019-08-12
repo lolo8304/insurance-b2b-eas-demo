@@ -40,6 +40,9 @@ import static java.util.stream.Collectors.toList;
 @CrossOrigin(origins = "http://localhost:63342")
 @RequestMapping("/api/v1/") // The paths for HTTP requests are relative to this base path.
 public class Controller {
+
+    public static final boolean DEBUG = false;
+    
     private final CordaRPCOps proxy;
     private final CordaX500Name myLegalName;
 
@@ -50,6 +53,11 @@ public class Controller {
     private final static String BASE_PATH = "sidis/eas";
 
     public Controller(NodeRPCConnection rpc) {
+        if (DEBUG && rpc.proxy == null) {
+            this.proxy = null;
+            this.myLegalName = null;
+            return;
+        }
         this.proxy = rpc.proxy;
         this.myLegalName = rpc.proxy.nodeInfo().getLegalIdentities().get(0).getName();
     }
@@ -58,10 +66,10 @@ public class Controller {
         return new URI(request.getScheme(), null, request.getServerName(), request.getServerPort(), null, null, null);
     }
     private URI createURI(HttpServletRequest request, String subpath) throws URISyntaxException {
-        return this.getRoot(request).resolve("/api/v1/"+subpath);
+        return this.getRoot(request).resolve("/api/v1/"+BASE_PATH+"/"+subpath);
     }
-    private URI link(HttpServletRequest request, String modelPlural, UniqueIdentifier id, String action) throws URISyntaxException {
-        return this.createURI(request, modelPlural + "/"+id.getId().toString() + "/"+action);
+    private String link(HttpServletRequest request, String modelPlural, UniqueIdentifier id, String action) throws URISyntaxException {
+        return this.createURI(request, modelPlural + "/"+id.getId().toString() + "/"+action).toString()+";"+action;
     }
     private URI self(HttpServletRequest request, String modelPlural, UniqueIdentifier id) throws URISyntaxException {
         return this.createURI(request, modelPlural + "/"+id.getId().toString());
@@ -158,15 +166,15 @@ public class Controller {
             StateVerifier verifier = StateVerifier.fromTransaction(signedTx, null);
             ServiceState service = verifier.output().one(ServiceState.class).object();
             URI selfLink = this.self(request, "services", service.getId());
-            URI updateLink = this.link(request, "services", service.getId(), "update");
-            URI informLink = this.link(request, "services", service.getId(), "inform");
-            URI shareLink = this.link(request, "services", service.getId(), "share");
+            String updateLink = this.link(request, "services", service.getId(), "update");
+            String informLink = this.link(request, "services", service.getId(), "inform");
+            String shareLink = this.link(request, "services", service.getId(), "share");
             return ResponseEntity
                     .status(HttpStatus.CREATED)
                     .location(selfLink)
-                    .header("Link", updateLink.toString(), "update")
-                    .header("Link", informLink.toString(), "inform")
-                    .header("Link", shareLink.toString(), "share")
+                    .header("Link", updateLink)
+                    .header("Link", informLink)
+                    .header("Link", shareLink)
                     .body(service);
 
         } catch (Throwable ex) {
