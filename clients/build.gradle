@@ -32,6 +32,12 @@ springBoot {
     mainClassName = "com.sidis.eas.client.webserver.Server"
 }
 
+task runWebserver0(type: JavaExec, dependsOn: assemble) {
+    classpath = sourceSets.main.runtimeClasspath
+    main = 'com.sidis.eas.client.webserver.Starter'
+    args '--server.port=10901', '--config.rpc.host=localhost', '--config.rpc.port=10006', '--config.rpc.username=user1', '--config.rpc.password=test'
+}
+
 task runWebserver1(type: JavaExec, dependsOn: assemble) {
     classpath = sourceSets.main.runtimeClasspath
     main = 'com.sidis.eas.client.webserver.Starter'

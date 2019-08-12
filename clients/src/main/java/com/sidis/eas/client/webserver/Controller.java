@@ -25,9 +25,13 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
 
 import static java.util.stream.Collectors.toList;
+
 
 /**
  * Define your API endpoints here.
@@ -48,6 +52,19 @@ public class Controller {
     public Controller(NodeRPCConnection rpc) {
         this.proxy = rpc.proxy;
         this.myLegalName = rpc.proxy.nodeInfo().getLegalIdentities().get(0).getName();
+    }
+
+    private URI getRoot(HttpServletRequest request) throws URISyntaxException {
+        return new URI(request.getScheme(), null, request.getServerName(), request.getServerPort(), null, null, null);
+    }
+    private URI createURI(HttpServletRequest request, String subpath) throws URISyntaxException {
+        return this.getRoot(request).resolve("/api/v1/"+subpath);
+    }
+    private URI link(HttpServletRequest request, String modelPlural, UniqueIdentifier id, String action) throws URISyntaxException {
+        return this.createURI(request, modelPlural + "/"+id.getId().toString() + "/"+action);
+    }
+    private URI self(HttpServletRequest request, String modelPlural, UniqueIdentifier id) throws URISyntaxException {
+        return this.createURI(request, modelPlural + "/"+id.getId().toString());
     }
 
     /**
@@ -117,6 +134,7 @@ public class Controller {
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<ServiceState> createService(
+            HttpServletRequest request,
             @RequestParam(name = "service-name", required = true) String serviceName,
             @RequestParam(name = "data", required = false) String data,
             @RequestParam(name = "price", required = false) Integer price) {
@@ -139,12 +157,17 @@ public class Controller {
 
             StateVerifier verifier = StateVerifier.fromTransaction(signedTx, null);
             ServiceState service = verifier.output().one(ServiceState.class).object();
-            /*
-            URI acceptLink = this.link("mandates", mandate.getId(), "accept");
-            URI denyLink = this.link("mandates", mandate.getId(), "deny");
-            URI withdrawLink = this.link("mandates", mandate.getId(), "withdraw");
-            */
-            return ResponseEntity.status(HttpStatus.CREATED).body(service);
+            URI selfLink = this.self(request, "services", service.getId());
+            URI updateLink = this.link(request, "services", service.getId(), "update");
+            URI informLink = this.link(request, "services", service.getId(), "inform");
+            URI shareLink = this.link(request, "services", service.getId(), "share");
+            return ResponseEntity
+                    .status(HttpStatus.CREATED)
+                    .location(selfLink)
+                    .header("Link", updateLink.toString(), "update")
+                    .header("Link", informLink.toString(), "inform")
+                    .header("Link", shareLink.toString(), "share")
+                    .body(service);
 
         } catch (Throwable ex) {
             final String msg = ex.getMessage();
