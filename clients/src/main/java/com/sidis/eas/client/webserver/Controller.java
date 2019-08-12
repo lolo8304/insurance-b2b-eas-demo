@@ -118,7 +118,8 @@ public class Controller {
     @ResponseBody
     public ResponseEntity<ServiceState> createService(
             @RequestParam(name = "service-name", required = true) String serviceName,
-            @RequestParam(name = "data", required = false) String data) {
+            @RequestParam(name = "data", required = false) String data,
+            @RequestParam(name = "price", required = false) Integer price) {
         try {
             if (data == null || JsonHelper.convertStringToJson(data) == null) {
                 data = "{}";
@@ -131,7 +132,8 @@ public class Controller {
             final SignedTransaction signedTx = proxy
                     .startTrackedFlowDynamic(ServiceFlow.Create.class,
                             serviceName,
-                            data)
+                            data,
+                            price)
                     .getReturnValue()
                     .get();
 

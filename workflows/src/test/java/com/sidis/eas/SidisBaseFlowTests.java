@@ -35,14 +35,32 @@ abstract public class SidisBaseFlowTests extends SidisBaseTests {
     }
 
 
-    protected SignedTransaction newServiceCreateFlow(String serviceName, String data) throws ExecutionException, InterruptedException {
-        FlowLogic<SignedTransaction> flow = new ServiceFlow.Create(serviceName, data);
+    protected SignedTransaction newServiceCreateFlow(String serviceName, String data, Integer price) throws ExecutionException, InterruptedException {
+        FlowLogic<SignedTransaction> flow = new ServiceFlow.Create(serviceName, data, price);
         CordaFuture<SignedTransaction> future = insurer1Node.startFlow(flow);
         network.runNetwork();
         return future.get();
     }
     protected SignedTransaction newServiceShareFlow(UniqueIdentifier id, Party serviceProvider) throws ExecutionException, InterruptedException {
         FlowLogic<SignedTransaction> flow = new ServiceFlow.Share(id, serviceProvider);
+        CordaFuture<SignedTransaction> future = insurer1Node.startFlow(flow);
+        network.runNetwork();
+        return future.get();
+    }
+    protected SignedTransaction newServiceUpdateFlow(UniqueIdentifier id, String data, Integer price) throws ExecutionException, InterruptedException {
+        FlowLogic<SignedTransaction> flow = new ServiceFlow.Update(id, data, price);
+        CordaFuture<SignedTransaction> future = insurer1Node.startFlow(flow);
+        network.runNetwork();
+        return future.get();
+    }
+    protected SignedTransaction newServiceActionAfterShareFlow(UniqueIdentifier id, String action) throws ExecutionException, InterruptedException {
+        FlowLogic<SignedTransaction> flow = new ServiceFlow.ActionAfterShare(id, action);
+        CordaFuture<SignedTransaction> future = insurer1Node.startFlow(flow);
+        network.runNetwork();
+        return future.get();
+    }
+    protected SignedTransaction newServiceActionBeforeShareFlow(UniqueIdentifier id, String action) throws ExecutionException, InterruptedException {
+        FlowLogic<SignedTransaction> flow = new ServiceFlow.ActionBeforeShare(id, action);
         CordaFuture<SignedTransaction> future = insurer1Node.startFlow(flow);
         network.runNetwork();
         return future.get();

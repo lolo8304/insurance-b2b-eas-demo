@@ -107,7 +107,7 @@ function saveDummyService(self, service, spShort, price, optionalIds){
             headers: {
                 "Content-Type" : "application/x-www-form-urlencoded"
             },
-            data: "service-name="+encodeURI(service)+"&data="+encodeURI(getServiceData())
+            data: "service-name="+encodeURI(service)+"&data="+encodeURI(getServiceData())+"&price="+encodeURI(price)
         }
     ).done(function(result) {
         forceRefreshGrids()
@@ -176,7 +176,7 @@ function show_services(tagName, result) {
                 }
             },
             { title: "Link", name: "id", type: "text", align: "center", width: 30, itemTemplate: function(value) {
-                 var res = "<a target='_blank' href='"+MAIN_URL+"/api/v1/sidis/eas/share-data/"+value.id+"'>o</a>";
+                 var res = "<a target='_blank' href='"+MAIN_URL+"/api/v1/sidis/eas/services/"+value.id+"'>o</a>";
                  i = i + 10;
                 return strongS(i)+res+strongE(i); }
             }
