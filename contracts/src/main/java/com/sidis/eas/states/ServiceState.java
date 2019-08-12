@@ -9,6 +9,7 @@ import net.corda.core.identity.AbstractParty;
 import net.corda.core.identity.Party;
 import net.corda.core.serialization.ConstructorForDeserialization;
 import net.corda.core.serialization.CordaSerializable;
+import org.apache.commons.collections.list.UnmodifiableList;
 import org.jetbrains.annotations.NotNull;
 
 import java.security.PublicKey;
@@ -46,15 +47,28 @@ public class ServiceState implements LinearState {
 
         @JsonIgnore
         private StateType type;
-        State(StateType type) {
+        private List<StateTransition> transitions;
+
+        @ConstructorForDeserialization
+        State(StateType type, List<StateTransition> transitions) {
             this.type = type;
+            this.transitions = transitions;
         }
+        State(StateType type) { this(type, new ArrayList<>()); }
         State() {
-            this(StateType.CONDITIONAL);
+            this(StateType.CONDITIONAL, new ArrayList<>());
         }
+
         public StateType getType() { return this.type; }
         @JsonIgnore
         public boolean isFinalState() { return this.type == StateType.FINAL; }
+        public void addTransition(StateTransition transition) {
+            this.transitions.add(transition);
+        }
+        public List<String> getNextActions() {
+            if (this.isFinalState()) return Collections.EMPTY_LIST;
+            return this.transitions.stream().map(x -> x.toString()).collect(Collectors.toList());
+        }
 
     }
 
@@ -88,6 +102,9 @@ public class ServiceState implements LinearState {
             Arrays.sort(currentStates);
             this.currentStates = currentStates;
             this.nextState = nextState;
+            for (State states : currentStates) {
+                states.addTransition(this);
+            }
         }
         @JsonIgnore
         public boolean willBeInFinalState() {

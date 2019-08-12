@@ -4,15 +4,10 @@ import com.sidis.eas.flows.ServiceFlow;
 import com.sidis.eas.states.JsonHelper;
 import com.sidis.eas.states.ServiceState;
 import com.sidis.eas.states.StateVerifier;
-import com.sidis.eas.flows.PatientRecordCreateFlow;
-import com.sidis.eas.flows.PatientRecordPatchFlow;
-import com.sidis.eas.flows.PatientRecordUpdateFlow;
-import com.sidis.eas.states.PatientRecordState;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import net.corda.core.contracts.UniqueIdentifier;
 import net.corda.core.identity.CordaX500Name;
-import net.corda.core.identity.Party;
 import net.corda.core.messaging.CordaRPCOps;
 import net.corda.core.node.NodeInfo;
 import net.corda.core.node.services.Vault;
@@ -20,6 +15,7 @@ import net.corda.core.node.services.vault.QueryCriteria;
 import net.corda.core.transactions.SignedTransaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.annotation.AliasFor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -41,7 +37,7 @@ import static java.util.stream.Collectors.toList;
 @RequestMapping("/api/v1/") // The paths for HTTP requests are relative to this base path.
 public class Controller {
 
-    public static final boolean DEBUG = false;
+    public static final boolean DEBUG = true;
 
     private final CordaRPCOps proxy;
     private final CordaX500Name myLegalName;
@@ -50,6 +46,7 @@ public class Controller {
 
     private final static Logger logger = LoggerFactory.getLogger(Controller.class);
 
+    private final static String MAPPING_PATH = "/api/v1/";
     private final static String BASE_PATH = "sidis/eas";
 
     public Controller(NodeRPCConnection rpc) {
@@ -60,19 +57,6 @@ public class Controller {
         }
         this.proxy = rpc.proxy;
         this.myLegalName = rpc.proxy.nodeInfo().getLegalIdentities().get(0).getName();
-    }
-
-    private URI getRoot(HttpServletRequest request) throws URISyntaxException {
-        return new URI(request.getScheme(), null, request.getServerName(), request.getServerPort(), null, null, null);
-    }
-    private URI createURI(HttpServletRequest request, String subpath) throws URISyntaxException {
-        return this.getRoot(request).resolve("/api/v1/"+BASE_PATH+"/"+subpath);
-    }
-    private String link(HttpServletRequest request, String modelPlural, UniqueIdentifier id, String action) throws URISyntaxException {
-        return this.createURI(request, modelPlural + "/"+id.getId().toString() + "/"+action).toString()+";"+action;
-    }
-    private URI self(HttpServletRequest request, String modelPlural, UniqueIdentifier id) throws URISyntaxException {
-        return this.createURI(request, modelPlural + "/"+id.getId().toString());
     }
 
     /**
@@ -103,6 +87,7 @@ public class Controller {
      * returns all unconsumed services that exist in the node's vault.
      */
     @GetMapping(value = BASE_PATH + "/services", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
     public List<ServiceState> getServices() {
         List<ServiceState> states = proxy.vaultQuery(ServiceState.class).getStates()
                 .stream().map(state -> state.getState().getData()).collect(toList());
@@ -141,13 +126,13 @@ public class Controller {
             consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
-    public ResponseEntity<ServiceState> createService(
+    public ResponseEntity<StateAndLinks> createService(
             HttpServletRequest request,
             @RequestParam(name = "service-name", required = true) String serviceName,
             @RequestParam(name = "data", required = false) String data,
             @RequestParam(name = "price", required = false) Integer price) {
         try {
-            if (data == null || JsonHelper.convertStringToJson(data) == null) {
+            if (data == null || data.isEmpty() || JsonHelper.convertStringToJson(data) == null) {
                 data = "{}";
             }
         } catch (IllegalStateException ex) {
@@ -165,22 +150,20 @@ public class Controller {
 
             StateVerifier verifier = StateVerifier.fromTransaction(signedTx, null);
             ServiceState service = verifier.output().one(ServiceState.class).object();
-            URI selfLink = this.self(request, "services", service.getId());
-            String updateLink = this.link(request, "services", service.getId(), "update");
-            String informLink = this.link(request, "services", service.getId(), "inform");
-            String shareLink = this.link(request, "services", service.getId(), "share");
-            return ResponseEntity
-                    .status(HttpStatus.CREATED)
-                    .location(selfLink)
-                    .header("Link", updateLink)
-                    .header("Link", informLink)
-                    .header("Link", shareLink)
-                    .body(service);
+
+            return new StateBuilder(service, ResponseEntity.status(HttpStatus.CREATED))
+                    .stateMapping(MAPPING_PATH, BASE_PATH, request)
+                    .self("services")
+                    .link("services", "update")
+                    .link("services", "inform")
+                    .link("services", "share")
+                    .build();
 
         } catch (Throwable ex) {
             final String msg = ex.getMessage();
             logger.error(ex.getMessage(), ex);
-            return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body(null);
+            StateAndLinks state = new StateAndLinks().error(ex);
+            return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body(state);
         }
     }
 
