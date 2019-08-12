@@ -42,7 +42,7 @@ import static java.util.stream.Collectors.toList;
 public class Controller {
 
     public static final boolean DEBUG = false;
-    
+
     private final CordaRPCOps proxy;
     private final CordaX500Name myLegalName;
 
