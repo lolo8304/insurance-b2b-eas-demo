@@ -8,6 +8,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import net.corda.core.contracts.UniqueIdentifier;
 import net.corda.core.identity.CordaX500Name;
+import net.corda.core.identity.Party;
 import net.corda.core.messaging.CordaRPCOps;
 import net.corda.core.node.NodeInfo;
 import net.corda.core.node.services.Vault;
@@ -151,13 +152,15 @@ public class Controller {
             StateVerifier verifier = StateVerifier.fromTransaction(signedTx, null);
             ServiceState service = verifier.output().one(ServiceState.class).object();
 
-            return new StateBuilder(service, ResponseEntity.status(HttpStatus.CREATED))
+            ResponseEntity<StateAndLinks> build = new StateBuilder(service, ResponseEntity.status(HttpStatus.CREATED))
                     .stateMapping(MAPPING_PATH, BASE_PATH, request)
                     .self("services")
                     .link("services", "update")
                     .link("services", "inform")
                     .link("services", "share")
                     .build();
+            System.out.println(build.toString());
+            return build;
 
         } catch (Throwable ex) {
             final String msg = ex.getMessage();
