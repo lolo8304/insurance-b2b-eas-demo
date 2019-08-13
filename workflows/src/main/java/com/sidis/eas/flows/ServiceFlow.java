@@ -266,7 +266,7 @@ public class ServiceFlow {
                 } else {
                     return signCollectAndFinalize(me, newService.getServiceProvider(), transactionBuilder);
                 }
-            } else {
+            } else if (!newService.getState().equals(ServiceState.State.SHARED)) {
                 // current state is predecessor of SHARED or parallel states of shared
                 getProgressTracker().setCurrentStep(BUILDING);
                 TransactionBuilder transactionBuilder = getTransactionBuilderSignedByParticipants(
@@ -279,6 +279,8 @@ public class ServiceFlow {
                  *          TODO 2 - Write our contract to control issuance!
                  * ===========================================================================*/
                 return signAndFinalize(transactionBuilder);
+            } else {
+                throw new FlowException("Sharing cannot be executed as action");
             }
         }
 

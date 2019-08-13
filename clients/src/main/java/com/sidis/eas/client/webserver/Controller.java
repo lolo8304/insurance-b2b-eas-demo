@@ -204,7 +204,8 @@ public class Controller {
             @PathVariable("id") String id,
             @PathVariable("action") String action) {
         if (ServiceState.StateTransition.valueOf(action) == null) {
-            return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(null);
+            return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+                    .body(new StateAndLinks<ServiceState>().error("illegal action <"+action+">. Method not allowed"));
         }
         UniqueIdentifier uid = new UniqueIdentifier(null, UUID.fromString(id));
         try {

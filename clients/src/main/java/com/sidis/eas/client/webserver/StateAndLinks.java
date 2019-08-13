@@ -71,5 +71,9 @@ public class StateAndLinks<T extends LinearState> {
         this.error = new ErrorMessage(e);
         return this;
     }
+    public StateAndLinks<T> error(String message) {
+        this.error = new ErrorMessage("Message" ,message);
+        return this;
+    }
 
 }

@@ -63,6 +63,7 @@ public class ServiceState implements LinearState {
         public StateType getType() { return this.type; }
         @JsonIgnore
         public boolean isFinalState() { return this.type == StateType.FINAL; }
+        public boolean isSharingState() { return this.type == StateType.SHARE_STATE; }
         public boolean isInitialState() { return this.type == StateType.INITIAL; }
         public void addTransition(StateTransition transition) {
             this.transitions.add(transition);
@@ -134,6 +135,10 @@ public class ServiceState implements LinearState {
         @JsonIgnore
         public boolean willBeInFinalState() {
             return this.nextState.isFinalState();
+        }
+        @JsonIgnore
+        public boolean willBeSharingState() {
+            return this.nextState.isSharingState();
         }
         public State getNextStateFrom(State from) throws IllegalStateException {
             if (from.isFinalState()) {
