@@ -30,4 +30,28 @@ public class StateMachineTests {
         Assert.assertEquals("no valid next actions", Arrays.asList("REGISTER", "INFORM", "UPDATE", "NO_SHARE", "DUPLICATE", "SHARE", "WITHDRAW"), state.getNextActions());
     }
 
+    @Test
+    public void testSharedAfterCreate() {
+        State createdState = State.valueOf("CREATED");
+        State sharedState = State.valueOf("SHARED");
+        Assert.assertEquals("shared is follower of CREATED", true, createdState.hasLaterState(sharedState));
+        Assert.assertEquals("created is NOT follower of SHARED", false, sharedState.hasLaterState(createdState));
+    }
+
+
+    @Test
+    public void testSharedAfterBeforeShared() {
+        State sharedState = State.valueOf("SHARED");
+        Assert.assertEquals("shared is never later than shared", false, sharedState.hasLaterState(sharedState));
+        Assert.assertEquals("shared is never earlier than shared", false, sharedState.hasLaterState(sharedState));
+    }
+
+    @Test
+    public void testCreateBeforeShared() {
+        State createdState = State.valueOf("CREATED");
+        State sharedState = State.valueOf("SHARED");
+        Assert.assertEquals("shared is NOT before CREATED", false, createdState.hasEarlierState(sharedState));
+        Assert.assertEquals("created is before of SHARED", true, sharedState.hasEarlierState(createdState));
+    }
+
 }

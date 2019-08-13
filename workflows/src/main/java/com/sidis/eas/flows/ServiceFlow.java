@@ -249,7 +249,7 @@ public class ServiceFlow {
              * ===========================================================================*/
             // We build our transaction.
             getProgressTracker().setCurrentStep(BUILDING);
-            if (service.getServiceProvider() != null) {
+            if (ServiceState.State.SHARED.hasLaterState(service.getState())) {
                 TransactionBuilder transactionBuilder = getTransactionBuilderSignedByParticipants(
                         newService,
                         new ServiceContract.Commands.ActionAfterShare(this.action));
@@ -265,7 +265,7 @@ public class ServiceFlow {
                 } else {
                     return signCollectAndFinalize(me, newService.getServiceProvider(), transactionBuilder);
                 }
-            } else {
+            } else if (ServiceState.State.SHARED.hasEarlierState(service.getState())) {
                 getProgressTracker().setCurrentStep(BUILDING);
                 TransactionBuilder transactionBuilder = getTransactionBuilderSignedByParticipants(
                         service,
@@ -277,6 +277,8 @@ public class ServiceFlow {
                  *          TODO 2 - Write our contract to control issuance!
                  * ===========================================================================*/
                 return signAndFinalize(transactionBuilder);
+            } else {
+                throw new FlowException("action <"+action+"> is not allowed in state <"+service.getState()+">");
             }
         }
 

@@ -187,7 +187,7 @@ function show_services(tagName, result) {
                  return strongS(i)+item.state.serviceName +"<br>"+price(item.state.price) + strongE(i);
                 }
             },
-            { title: "Roles", name: "state", type: "text", width: 150, itemTemplate: function(value, item) {
+            { title: "Roles", name: "state", type: "text", itemTemplate: function(value, item) {
                  i = i + 1;
                  return strongS(i)+"I: "+X500toO(item.state.initiatorX500)
                     +"<br>SP: "+X500toO(item.state.serviceProviderX500)+strongE(i);

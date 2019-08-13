@@ -23,7 +23,8 @@ public class ServiceState implements LinearState {
     public enum StateType {
         INITIAL,
         CONDITIONAL,
-        FINAL
+        SHARE_STATE,
+        FINAL;
     }
 
     @CordaSerializable
@@ -36,7 +37,7 @@ public class ServiceState implements LinearState {
         TIMEOUTS(StateType.FINAL),
         WITHDRAWN(StateType.FINAL),
 
-        SHARED,
+        SHARED(StateType.SHARE_STATE),
         NOT_SHARED(StateType.FINAL),
         DUPLICATE(StateType.FINAL),
 
@@ -73,6 +74,25 @@ public class ServiceState implements LinearState {
         public boolean isValidAction(String action) {
             if (this.isFinalState()) return false;
             return this.transitions.stream().anyMatch(x -> x.toString().equals(action));
+        }
+        public boolean hasLaterState(State state) {
+            if (this.equals(state)) return false;
+            return hasLaterState(state, new HashSet<>());
+        }
+        private boolean hasLaterState(State state, Set<State> visited) {
+            if (visited.contains(this)) return false;
+            visited.add(this);
+            if (this.equals(state)) return true;
+            for (StateTransition transition : this.transitions) {
+                if (transition.nextState != null && transition.nextState.hasLaterState(state, visited)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        public boolean hasEarlierState(State state) {
+            if (this.equals(state)) return false;
+            return state.hasLaterState(this);
         }
 
     }
