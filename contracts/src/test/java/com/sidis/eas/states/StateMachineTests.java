@@ -63,4 +63,14 @@ public class StateMachineTests {
         Assert.assertEquals("shared is later accept", true, sharedState.hasLaterState(acceptedState));
     }
 
+
+    @Test
+    public void testNoShare_is_not_shared() {
+        State notShared = State.valueOf("NOT_SHARED");
+        State shared = State.valueOf("SHARED");
+        Assert.assertEquals("shared is not later than not-shared", false, shared.hasLaterState(notShared));
+        Assert.assertEquals("shared is not earlier than not-shared", false, shared.hasEarlierState(notShared));
+    }
+
+
 }
