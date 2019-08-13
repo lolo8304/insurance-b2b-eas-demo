@@ -203,78 +203,14 @@ public class ServiceFlow {
 
 
 
-    @InitiatingFlow(version = 2)
-    @StartableByRPC
-    public static class ActionAfterShare extends BaseFlow {
-        private final UniqueIdentifier id;
-        private final String action;
-
-        public ActionAfterShare(UniqueIdentifier id, String action) {
-            this.id = id;
-            this.action = action;
-        }
-
-        @Override
-        public ProgressTracker getProgressTracker() {
-            return this.progressTracker_nosync;
-        }
-
-        private ServiceState.StateTransition getTransition() {
-            return ServiceState.StateTransition.valueOf(this.action);
-        }
-
-        @Suspendable
-        @Override
-        public SignedTransaction call() throws FlowException {
-            getProgressTracker().setCurrentStep(PREPARATION);
-            // We get a reference to our own identity.
-            Party me = getOurIdentity();
-
-            /* ============================================================================
-             *         TODO 1 - Create our object !
-             * ===========================================================================*/
-
-            StateAndRef<ServiceState> serviceRef = new FlowHelper<ServiceState>(this.getServiceHub()).getLastStateByLinearId(ServiceState.class, this.id);
-            if (serviceRef == null) {
-                throw new FlowException("service with id "+this.id+" not found");
-            }
-            ServiceState service = this.getStateByRef(serviceRef);
-
-            // We create our new TokenState.
-            ServiceState sharedService = service.withAction(this.getTransition());
-
-            /* ============================================================================
-             *      TODO 3 - Build our issuance transaction to update the ledger!
-             * ===========================================================================*/
-            // We build our transaction.
-            getProgressTracker().setCurrentStep(BUILDING);
-            TransactionBuilder transactionBuilder = getTransactionBuilderSignedByParticipants(
-                    sharedService,
-                    new ServiceContract.Commands.ActionAfterShare(this.action));
-            transactionBuilder.addInputState(serviceRef);
-            transactionBuilder.addOutputState(sharedService);
-
-            /* ============================================================================
-             *          TODO 2 - Write our contract to control issuance!
-             * ===========================================================================*/
-            // We check our transaction is valid based on its contracts.
-            if (sharedService.getServiceProvider() == null) {
-                return signAndFinalize(transactionBuilder);
-            } else {
-                return signCollectAndFinalize(me, sharedService.getServiceProvider(), transactionBuilder);
-            }
-        }
-
-    }
-
 
     @InitiatingFlow(version = 2)
     @StartableByRPC
-    public static class ActionBeforeShare extends BaseFlow {
+    public static class Action extends BaseFlow {
         private final UniqueIdentifier id;
         private final String action;
 
-        public ActionBeforeShare(UniqueIdentifier id, String action) {
+        public Action(UniqueIdentifier id, String action) {
             this.id = id;
             this.action = action;
         }
@@ -313,24 +249,39 @@ public class ServiceFlow {
              * ===========================================================================*/
             // We build our transaction.
             getProgressTracker().setCurrentStep(BUILDING);
-            TransactionBuilder transactionBuilder = getTransactionBuilderSignedByParticipants(
-                    newService,
-                    new ServiceContract.Commands.ActionBeforeShare(this.action));
-            transactionBuilder.addInputState(serviceRef);
-            transactionBuilder.addOutputState(newService);
+            if (service.getServiceProvider() != null) {
+                TransactionBuilder transactionBuilder = getTransactionBuilderSignedByParticipants(
+                        newService,
+                        new ServiceContract.Commands.ActionAfterShare(this.action));
+                transactionBuilder.addInputState(serviceRef);
+                transactionBuilder.addOutputState(newService);
 
-            /* ============================================================================
-             *          TODO 2 - Write our contract to control issuance!
-             * ===========================================================================*/
-            // We check our transaction is valid based on its contracts.
-            if (newService.getServiceProvider() == null) {
-                return signAndFinalize(transactionBuilder);
+                /* ============================================================================
+                 *          TODO 2 - Write our contract to control issuance!
+                 * ===========================================================================*/
+                // We check our transaction is valid based on its contracts.
+                if (newService.getServiceProvider() == null) {
+                    return signAndFinalize(transactionBuilder);
+                } else {
+                    return signCollectAndFinalize(me, newService.getServiceProvider(), transactionBuilder);
+                }
             } else {
-                return signCollectAndFinalize(me, newService.getServiceProvider(), transactionBuilder);
+                getProgressTracker().setCurrentStep(BUILDING);
+                TransactionBuilder transactionBuilder = getTransactionBuilderSignedByParticipants(
+                        service,
+                        new ServiceContract.Commands.ActionBeforeShare(this.action));
+                transactionBuilder.addInputState(serviceRef);
+                transactionBuilder.addOutputState(newService);
+
+                /* ============================================================================
+                 *          TODO 2 - Write our contract to control issuance!
+                 * ===========================================================================*/
+                return signAndFinalize(transactionBuilder);
             }
         }
 
     }
+
 
 
     @InitiatedBy(ServiceFlow.Create.class)
@@ -374,10 +325,10 @@ public class ServiceFlow {
             return this.receiveCounterpartiesNoTxChecking();
         }
     }
-    @InitiatedBy(ActionAfterShare.class)
-    public static class ActionAfterShareResponder extends ResponderBaseFlow<ServiceState> {
+    @InitiatedBy(Action.class)
+    public static class ActionResponder extends ResponderBaseFlow<ServiceState> {
 
-        public ActionAfterShareResponder(FlowSession otherFlow) {
+        public ActionResponder(FlowSession otherFlow) {
             super(otherFlow);
         }
 
@@ -388,17 +339,4 @@ public class ServiceFlow {
         }
     }
 
-    @InitiatedBy(ActionBeforeShare.class)
-    public static class ActionBeforeShareResponder extends ResponderBaseFlow<ServiceState> {
-
-        public ActionBeforeShareResponder(FlowSession otherFlow) {
-            super(otherFlow);
-        }
-
-        @Suspendable
-        @Override
-        public Unit call() throws FlowException {
-            return this.receiveCounterpartiesNoTxChecking();
-        }
-    }
 }

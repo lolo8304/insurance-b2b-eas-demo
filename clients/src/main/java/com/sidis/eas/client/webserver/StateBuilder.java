@@ -8,17 +8,29 @@ import org.springframework.http.ResponseEntity.BodyBuilder;
 import javax.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.function.Function;
 
-public class StateBuilder {
+public class StateBuilder<T extends LinearState> {
 
-    private final LinearState state;
+    private final List<StateAndLinks<T>> states;
     private final BodyBuilder builder;
     private RestHelper apiHelper;
 
-    public StateBuilder(LinearState state, BodyBuilder builder) {
-        this.state = state;
+    public StateBuilder(T state, BodyBuilder builder) {
+        this.states = Collections.singletonList(new StateAndLinks<>(state));
+        this.builder = builder;
+    }
+
+    private List<StateAndLinks<T>> wrapIntoStateAndLinks(List<T> originalStates) {
+        List<StateAndLinks<T>> newStates = new ArrayList<>();
+        for (T state : originalStates) {
+            newStates.add(new StateAndLinks<>(state));
+        }
+        return newStates;
+    }
+    public StateBuilder(List<T> states, BodyBuilder builder) {
+        this.states = wrapIntoStateAndLinks(states);
         this.builder = builder;
     }
 
@@ -26,8 +38,8 @@ public class StateBuilder {
         private final String mappingPath;
         private final String bashPath;
         private final HttpServletRequest request;
-        private final Map<String, URI> links = new LinkedHashMap<>();
-        private URI linkSelf;
+        //private final Map<String, URI> links = new LinkedHashMap<>();
+        //private URI linkSelf;
 
         public RestHelper(String mappingPath, String basePath, HttpServletRequest request) {
             this.mappingPath = mappingPath;
@@ -41,53 +53,97 @@ public class StateBuilder {
         protected URI createURI(String subpath) throws URISyntaxException {
             return this.getRoot().resolve(this.mappingPath+this.bashPath+"/"+subpath);
         }
-        public void self(String modelPlural, UniqueIdentifier id) throws URISyntaxException {
-            this.linkSelf = this.createURI(modelPlural + "/" + id.getId().toString());
+        public URI self(String modelPlural, UniqueIdentifier id) throws URISyntaxException {
+            return this.createURI(modelPlural + "/" + id.getId().toString());
         }
 
-        public void link(String modelPlural, UniqueIdentifier id, String action) throws URISyntaxException {
-            this.links.put(
+        public Map.Entry<String, URI> link(String modelPlural, UniqueIdentifier id, String action) throws URISyntaxException {
+            return new AbstractMap.SimpleImmutableEntry<>(
                     action,
-                    createURI(modelPlural + "/" + id.getId().toString() + "/" + action)
-            );
+                    createURI(modelPlural + "/" + id.getId().toString() + "/" + action));
+        }
+        public Map<String, URI> links(String modelPlural, UniqueIdentifier id, List<String> actions) throws URISyntaxException {
+            Map<String, URI> map = new LinkedHashMap<>();
+            for (String action: actions) {
+                map.put(
+                        action,
+                        createURI(modelPlural + "/" + id.getId().toString() + "/" + action)
+                );
+            }
+            return map;
+        }
+        public Map<String, URI> links(String modelPlural, UniqueIdentifier id, String[] actions) throws URISyntaxException {
+            Map<String, URI> map = new LinkedHashMap<>();
+            for(String action : actions) {
+                map.put(
+                        action,
+                        createURI(modelPlural + "/" + id.getId().toString() + "/" + action)
+                );
+            }
+            return map;
         }
     }
 
-    public StateBuilder stateMapping(String mappingPath, String basePath, HttpServletRequest request) {
+    public StateBuilder<T> stateMapping(String mappingPath, String basePath, HttpServletRequest request) {
         this.apiHelper = new RestHelper(mappingPath, basePath, request);
         return this;
     }
 
-    public StateBuilder link(String modelPlural, String action) throws URISyntaxException {
+
+
+    public StateBuilder<T> link(String modelPlural, String action) throws URISyntaxException {
         if (apiHelper != null) {
-            apiHelper.link(modelPlural, this.state.getLinearId(), action);
-        }
-        return this;
-    }
-    public StateBuilder link(String modelPlural, String[] actions) throws URISyntaxException {
-        if (apiHelper != null) {
-            for (int i = 0; i < actions.length ; i++) {
-                apiHelper.link(modelPlural, this.state.getLinearId(), actions[i]);
+            for (StateAndLinks<T> stateAndLink : this.states) {
+                stateAndLink.link(
+                    apiHelper.link(modelPlural, stateAndLink.getState().getLinearId(), action));
             }
-        }
-        return this;
-    }
-    public StateBuilder self(String modelPlural) throws URISyntaxException {
-        if (apiHelper != null) {
-            apiHelper.self(modelPlural, this.state.getLinearId());
         }
         return this;
     }
 
-    public ResponseEntity<StateAndLinks> build() {
-        StateAndLinks body = new StateAndLinks(this.state);
+    public StateBuilder<T> links(String modelPlural, Function<? super T, List<String>> mapper) throws URISyntaxException {
         if (apiHelper != null) {
-            if (apiHelper.linkSelf != null) {
-                this.builder.location(apiHelper.linkSelf);
-                body.self(apiHelper.linkSelf);
+            for (StateAndLinks<T> stateAndLink : this.states) {
+                stateAndLink.links(
+                        apiHelper.links(modelPlural, stateAndLink.getState().getLinearId(),
+                                mapper.apply(stateAndLink.getState())));
             }
-            body.links(apiHelper.links);
         }
-        return this.builder.body(body);
+        return this;
+    }
+
+    public StateBuilder<T> links(String modelPlural, String[] actions) throws URISyntaxException {
+        if (apiHelper != null) {
+            for (StateAndLinks<T> stateAndLink : this.states) {
+                stateAndLink.links(
+                    apiHelper.links(modelPlural, stateAndLink.getState().getLinearId(), actions));
+            }
+        }
+        return this;
+    }
+    public StateBuilder<T> links(String modelPlural, List<String> actions) throws URISyntaxException {
+        if (apiHelper != null) {
+            for (StateAndLinks<T> stateAndLink : this.states) {
+                stateAndLink.links(
+                    apiHelper.links(modelPlural, stateAndLink.getState().getLinearId(), actions));
+            }
+        }
+        return this;
+    }
+    public StateBuilder<T> self(String modelPlural) throws URISyntaxException {
+        if (apiHelper != null) {
+            for (StateAndLinks<T> stateAndLink : this.states) {
+                stateAndLink.self(
+                        apiHelper.self(modelPlural, stateAndLink.getState().getLinearId()));
+            }
+        }
+        return this;
+    }
+
+    public ResponseEntity<StateAndLinks<T>> build() {
+        return this.builder.body(this.states.get(0));
+    }
+    public ResponseEntity<List<StateAndLinks<T>>> buildList() {
+        return this.builder.body(this.states);
     }
 }

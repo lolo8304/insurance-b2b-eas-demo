@@ -1,5 +1,6 @@
 package com.sidis.eas.states;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
@@ -9,7 +10,10 @@ import java.util.Map;
 
 public class JsonHelper {
 
-    public static String convertJsonToString(Map<String, Object> data) {
+    private static final TypeReference<Map<String, Object>> TYPE_REF_MAP = new TypeReference<Map<String, Object>>() {
+    };
+
+    static String convertJsonToString(Map<String, Object> data) {
         ObjectMapper mapper = new ObjectMapper();
         try {
             return mapper.writeValueAsString(data);
@@ -23,7 +27,7 @@ public class JsonHelper {
             ObjectMapper mapper = new ObjectMapper();
             mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
             try {
-                return mapper.readValue(dataString, Map.class);
+                return mapper.readValue(dataString, TYPE_REF_MAP);
             } catch (IOException e) {
                 throw new IllegalStateException(e.getMessage(), e);
             }
@@ -32,7 +36,7 @@ public class JsonHelper {
         }
     }
 
-    public static Map<String, Object> filterByGroupId(Map<String, Object> dataObject, String[] groupIDs) {
+    static Map<String, Object> filterByGroupId(Map<String, Object> dataObject, String[] groupIDs) {
         Map<String, Object> sharedMap = new LinkedHashMap<>();
         for (String s: groupIDs) {
             if (dataObject.get(s) != null) {
@@ -42,13 +46,13 @@ public class JsonHelper {
         return sharedMap;
     }
 
-
+    @SuppressWarnings("unchecked")
     private static Map<String, Object> updateMapWithEntry(Map<String, Object> map, Map.Entry<String, Object> updateEntry) {
         Object oldValue = map.get(updateEntry.getKey());
         if (oldValue == null) {
             map.put(updateEntry.getKey(), updateEntry.getValue());
         } else {
-            if (oldValue instanceof Map) {
+            if (oldValue instanceof Map<?, ?>) {
                 Map<String, Object> oldMap = (Map)oldValue;
                 Map<String, Object> newMap = (Map)updateEntry.getValue();
                 map.put(updateEntry.getKey(), updateMapWithMap(oldMap, newMap));

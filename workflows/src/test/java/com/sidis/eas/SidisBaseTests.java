@@ -10,8 +10,8 @@ import org.junit.After;
 
 import java.security.PublicKey;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 abstract public class SidisBaseTests {
     protected final Instant start = Instant.now();
@@ -39,7 +39,7 @@ abstract public class SidisBaseTests {
     public abstract void setup();
 
     public void setup(boolean withNodes) {
-        this.setup(withNodes, null);
+        this.setup(withNodes, (Class<? extends FlowLogic>[]) null);
 
     }
     public void setup(boolean withNodes, Class<? extends FlowLogic> ...responderClasses) {
@@ -97,10 +97,12 @@ abstract public class SidisBaseTests {
         if (network != null) network.stopNodes();
     }
 
-
     protected List<PublicKey> getPublicKeys(Party... parties) {
-        ImmutableList<Party> list = ImmutableList.copyOf(parties);
-        return list.stream().map(party -> party.getOwningKey()).collect(Collectors.toList());
+        List<PublicKey> publicKeys = new ArrayList<>();
+        for (Party party: parties) {
+            publicKeys.add(party.getOwningKey());
+        }
+        return publicKeys;
     }
 
     protected Party getParty(StartedMockNode node) {

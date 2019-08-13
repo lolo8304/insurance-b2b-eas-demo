@@ -49,6 +49,9 @@ public class StateAndLinks<T extends LinearState> {
     public void link(String key, URI newUri) {
         this.links.put(key, newUri.toString());
     }
+    public void link(Map.Entry<String, URI> entry) {
+        this.links.put(entry.getKey(), entry.getValue().toString());
+    }
     public void links(Map<String, URI> newLinks) {
         for (Map.Entry<String, URI> entry : newLinks.entrySet()) {
             this.link(entry.getKey(), entry.getValue());
@@ -64,7 +67,7 @@ public class StateAndLinks<T extends LinearState> {
     public Map<String, String> getLinks() { return this.links; }
     public ErrorMessage getError() { return this.error; }
 
-    public StateAndLinks error(Throwable e) {
+    public StateAndLinks<T> error(Throwable e) {
         this.error = new ErrorMessage(e);
         return this;
     }

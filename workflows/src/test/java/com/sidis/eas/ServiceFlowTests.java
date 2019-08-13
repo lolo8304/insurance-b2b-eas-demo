@@ -17,8 +17,7 @@ public class ServiceFlowTests extends SidisBaseFlowTests {
             ServiceFlow.CreateResponder.class,
             ServiceFlow.UpdateResponder.class,
             ServiceFlow.ShareResponder.class,
-            ServiceFlow.ActionAfterShareResponder.class,
-            ServiceFlow.ActionBeforeShareResponder.class
+            ServiceFlow.ActionResponder.class
         );
     }
 
@@ -113,7 +112,7 @@ public class ServiceFlowTests extends SidisBaseFlowTests {
         Assert.assertEquals("state is SHARED", "SHARED", serviceS.getState().toString());
 
         StateVerifier verifierA = StateVerifier.fromTransaction(
-                this.newServiceActionAfterShareFlow(serviceS.getId(), "ACCEPT"),
+                this.newServiceActionFlow(serviceS.getId(), "ACCEPT"),
                 this.ledgerServices);
         ServiceState serviceA = verifierA
                 .output().one()
@@ -137,7 +136,7 @@ public class ServiceFlowTests extends SidisBaseFlowTests {
                 .object();
 
         StateVerifier verifier1 = StateVerifier.fromTransaction(
-                this.newServiceActionBeforeShareFlow(service.getId(), "INFORM"),
+                this.newServiceActionFlow(service.getId(), "INFORM"),
                 this.ledgerServices);
         ServiceState service1 = verifier1
                 .output().one()
@@ -145,7 +144,7 @@ public class ServiceFlowTests extends SidisBaseFlowTests {
                 .object();
 
         StateVerifier verifier2 = StateVerifier.fromTransaction(
-                this.newServiceActionBeforeShareFlow(service1.getId(), "CONFIRM"),
+                this.newServiceActionFlow(service1.getId(), "CONFIRM"),
                 this.ledgerServices);
         ServiceState service2 = verifier2
                 .output().one()

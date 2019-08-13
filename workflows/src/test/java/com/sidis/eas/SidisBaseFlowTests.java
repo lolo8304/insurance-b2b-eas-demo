@@ -53,14 +53,8 @@ abstract public class SidisBaseFlowTests extends SidisBaseTests {
         network.runNetwork();
         return future.get();
     }
-    protected SignedTransaction newServiceActionAfterShareFlow(UniqueIdentifier id, String action) throws ExecutionException, InterruptedException {
-        FlowLogic<SignedTransaction> flow = new ServiceFlow.ActionAfterShare(id, action);
-        CordaFuture<SignedTransaction> future = insurer1Node.startFlow(flow);
-        network.runNetwork();
-        return future.get();
-    }
-    protected SignedTransaction newServiceActionBeforeShareFlow(UniqueIdentifier id, String action) throws ExecutionException, InterruptedException {
-        FlowLogic<SignedTransaction> flow = new ServiceFlow.ActionBeforeShare(id, action);
+    protected SignedTransaction newServiceActionFlow(UniqueIdentifier id, String action) throws ExecutionException, InterruptedException {
+        FlowLogic<SignedTransaction> flow = new ServiceFlow.Action(id, action);
         CordaFuture<SignedTransaction> future = insurer1Node.startFlow(flow);
         network.runNetwork();
         return future.get();

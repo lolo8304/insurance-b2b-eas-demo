@@ -69,6 +69,10 @@ public class ServiceState implements LinearState {
             if (this.isFinalState()) return Collections.EMPTY_LIST;
             return this.transitions.stream().map(x -> x.toString()).collect(Collectors.toList());
         }
+        public boolean isValidAction(String action) {
+            if (this.isFinalState()) return false;
+            return this.transitions.stream().anyMatch(x -> x.toString().equals(action));
+        }
 
     }
 
@@ -83,9 +87,9 @@ public class ServiceState implements LinearState {
 
         UPDATE(null,      State.CREATED, State.SHARED),
 
-        SHARE(State.SHARED,         State.CONFIRMED, State.INFORMED, State.REGISTERED, State.CREATED),
         NO_SHARE(State.NOT_SHARED,  State.CONFIRMED, State.INFORMED, State.REGISTERED, State.CREATED),
         DUPLICATE(State.DUPLICATE, State.CONFIRMED, State.INFORMED, State.REGISTERED, State.CREATED),
+        SHARE(State.SHARED,         State.CONFIRMED, State.INFORMED, State.REGISTERED, State.CREATED),
 
         WITHDRAW(State.WITHDRAWN,   State.CREATED, State.REGISTERED, State.INFORMED, State.CONFIRMED, State.SHARED),
 

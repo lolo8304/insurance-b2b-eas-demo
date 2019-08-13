@@ -6,7 +6,9 @@ import com.sidis.eas.states.ServiceState;
 import com.sidis.eas.states.StateVerifier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import net.corda.core.contracts.LinearState;
 import net.corda.core.contracts.UniqueIdentifier;
+import net.corda.core.flows.FlowLogic;
 import net.corda.core.identity.CordaX500Name;
 import net.corda.core.identity.Party;
 import net.corda.core.messaging.CordaRPCOps;
@@ -38,7 +40,7 @@ import static java.util.stream.Collectors.toList;
 @RequestMapping("/api/v1/") // The paths for HTTP requests are relative to this base path.
 public class Controller {
 
-    public static final boolean DEBUG = true;
+    public static final boolean DEBUG = false;
 
     private final CordaRPCOps proxy;
     private final CordaX500Name myLegalName;
@@ -58,6 +60,21 @@ public class Controller {
         }
         this.proxy = rpc.proxy;
         this.myLegalName = rpc.proxy.nodeInfo().getLegalIdentities().get(0).getName();
+    }
+
+    private ResponseEntity<List<StateAndLinks<ServiceState>>> getResponse(HttpServletRequest request, List<ServiceState> list, HttpStatus status) throws URISyntaxException {
+        return new StateBuilder<>(list, ResponseEntity.status(status))
+                .stateMapping(MAPPING_PATH, BASE_PATH, request)
+                .links("services", x -> x.getState().getNextActions())
+                .self("services")
+                .buildList();
+    }
+    private ResponseEntity<StateAndLinks<ServiceState>> getResponse(HttpServletRequest request, ServiceState service, HttpStatus status) throws URISyntaxException {
+        return new StateBuilder<>(service, ResponseEntity.status(HttpStatus.OK))
+                .stateMapping(MAPPING_PATH, BASE_PATH, request)
+                .self("services")
+                .links("services", x -> x.getState().getNextActions())
+                .build();
     }
 
     /**
@@ -89,10 +106,11 @@ public class Controller {
      */
     @GetMapping(value = BASE_PATH + "/services", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
-    public List<ServiceState> getServices() {
-        List<ServiceState> states = proxy.vaultQuery(ServiceState.class).getStates()
+    public ResponseEntity<List<StateAndLinks<ServiceState>>> getServices(
+            HttpServletRequest request) throws URISyntaxException {
+        List<ServiceState> list = proxy.vaultQuery(ServiceState.class).getStates()
                 .stream().map(state -> state.getState().getData()).collect(toList());
-        return states;
+        return this.getResponse(request, list, HttpStatus.OK);
     }
 
     /**
@@ -105,16 +123,23 @@ public class Controller {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     @ResponseBody
-    public ServiceState getUnconsumedServiceById(@PathVariable("id") String id) {
+    public ResponseEntity<StateAndLinks<ServiceState>> getUnconsumedServiceById(
+            HttpServletRequest request,
+            @PathVariable("id") String id) throws URISyntaxException {
         UniqueIdentifier uid = new UniqueIdentifier(null, UUID.fromString(id));
         QueryCriteria queryCriteria = new QueryCriteria.LinearStateQueryCriteria(
                 null,
-                Arrays.asList(uid),
+                Collections.singletonList(uid),
                 Vault.StateStatus.UNCONSUMED,
                 null);
         List<ServiceState> states = proxy.vaultQueryByCriteria(queryCriteria, ServiceState.class)
                 .getStates().stream().map(state -> state.getState().getData()).collect(toList());
-        return states.isEmpty() ? null : states.get(states.size()-1);
+        if (states.isEmpty()) {
+            return null;
+        } else {
+            ServiceState service = states.get(states.size()-1);
+            return this.getResponse(request, service, HttpStatus.OK);
+        }
     }
 
     /**
@@ -127,9 +152,9 @@ public class Controller {
             consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
-    public ResponseEntity<StateAndLinks> createService(
+    public ResponseEntity<StateAndLinks<ServiceState>> createService(
             HttpServletRequest request,
-            @RequestParam(name = "service-name", required = true) String serviceName,
+            @RequestParam(name = "service-name") String serviceName,
             @RequestParam(name = "data", required = false) String data,
             @RequestParam(name = "price", required = false) Integer price) {
         try {
@@ -151,22 +176,50 @@ public class Controller {
 
             StateVerifier verifier = StateVerifier.fromTransaction(signedTx, null);
             ServiceState service = verifier.output().one(ServiceState.class).object();
-
-            ResponseEntity<StateAndLinks> build = new StateBuilder(service, ResponseEntity.status(HttpStatus.CREATED))
-                    .stateMapping(MAPPING_PATH, BASE_PATH, request)
-                    .self("services")
-                    .link("services", "update")
-                    .link("services", "inform")
-                    .link("services", "share")
-                    .build();
-            System.out.println(build.toString());
-            return build;
+            return this.getResponse(request, service, HttpStatus.CREATED);
 
         } catch (Throwable ex) {
-            final String msg = ex.getMessage();
             logger.error(ex.getMessage(), ex);
-            StateAndLinks state = new StateAndLinks().error(ex);
-            return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body(state);
+            return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED)
+                    .body(new StateAndLinks<ServiceState>().error(ex));
+        }
+    }
+
+
+    /**
+     * execute an action on the services give by id
+     * @param id identifier of the service
+     * @param action name of action to be executed
+     */
+    @RequestMapping(
+            value = BASE_PATH + "/services/{id}/{action}",
+            method = RequestMethod.POST,
+            consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<StateAndLinks<ServiceState>> serviceAction(
+            HttpServletRequest request,
+            @PathVariable("id") String id,
+            @PathVariable("id") String action) {
+        if (ServiceState.StateTransition.valueOf(action) == null) {
+            return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(null);
+        }
+        try {
+            final SignedTransaction signedTx = proxy
+                    .startTrackedFlowDynamic(ServiceFlow.Action.class,
+                            id,
+                            action)
+                    .getReturnValue()
+                    .get();
+
+            StateVerifier verifier = StateVerifier.fromTransaction(signedTx, null);
+            ServiceState service = verifier.output().one(ServiceState.class).object();
+            return this.getResponse(request, service, HttpStatus.OK);
+
+        } catch (Throwable ex) {
+            logger.error(ex.getMessage(), ex);
+            return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED)
+                    .body(new StateAndLinks<ServiceState>().error(ex));
         }
     }
 
