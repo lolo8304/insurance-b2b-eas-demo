@@ -202,7 +202,7 @@ public class Controller {
     public ResponseEntity<StateAndLinks<ServiceState>> serviceAction(
             HttpServletRequest request,
             @PathVariable("id") String id,
-            @PathVariable("id") String action) {
+            @PathVariable("action") String action) {
         if (ServiceState.StateTransition.valueOf(action) == null) {
             return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(null);
         }

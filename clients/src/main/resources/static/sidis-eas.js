@@ -133,6 +133,35 @@ function strongS(i) {
 function strongE(i) {
     return (i < 10 ? "</strong><br>" : "");
 }
+function makeOptions(id, list) {
+    var s = "<select id='"+id+"' onChange='onSelectionChanged(this)'><option>choose</option>";
+    Object.entries(list).forEach(([key, value]) =>
+        s = s + (key == "self" ? "" : "<br><option value=\""+value+"\">"+key+"</option>"));
+    s = s + "</select>";
+    return s;
+}
+function onSelectionChanged(select) {
+    if ($(select).val() != '') {
+            var url = $(select).val();
+            stopRefresh();
+            $.ajax(
+                {
+                    url: url,
+                    method: "POST",
+                    headers: {
+                        "Content-Type" : "application/x-www-form-urlencoded"
+                    },
+                    data: ""
+                }
+            ).done(function(result) {
+                forceRefreshGrids()
+            }).fail(function(jqXHR, textStatus) {
+                alert(jqXHR.responseText);
+                forceRefreshGrids();
+            });
+
+    }
+};
 
 
 function show_services(tagName, result) {
@@ -147,35 +176,35 @@ function show_services(tagName, result) {
         filtering: false,
         autoload: true,
 
-        data: result.reverse().map ( x => x.state ),
+        data: result.reverse(),
 
         fields: [
 
             /*
               */
-            { title: "Service", name: "serviceName", type: "text", itemTemplate: function(value, item) {
+            { title: "Service", name: "state.serviceName", type: "text", itemTemplate: function(value, item) {
                  i = i + 1;
-                 return strongS(i)+item.serviceName +"<br>"+price(item.price) + strongE(i);
+                 return strongS(i)+item.state.serviceName +"<br>"+price(item.state.price) + strongE(i);
                 }
             },
-            { title: "Roles", name: "", type: "text", width: 150, itemTemplate: function(value, item) {
+            { title: "Roles", name: "state", type: "text", width: 150, itemTemplate: function(value, item) {
                  i = i + 1;
-                 return strongS(i)+"I: "+X500toO(item.initiatorX500)
-                    +"<br>SP: "+X500toO(item.serviceProviderX500)+strongE(i);
+                 return strongS(i)+"I: "+X500toO(item.state.initiatorX500)
+                    +"<br>SP: "+X500toO(item.state.serviceProviderX500)+strongE(i);
                 }
             },
-            { title: "State", name: "state", type: "text", itemTemplate: function(value, item) {
+            { title: "State", name: "state.state", type: "text", itemTemplate: function(value, item) {
                  i = i + 1;
-                 return strongS(i)+value+strongE(i);
+                 return strongS(i)+value+"(*)<br>"+makeOptions(item.state.id.id, item.links)+strongE(i);
                 }
             },
-            { title: "Data", name: "serviceData", type: "text", itemTemplate: function(value, item) {
+            { title: "Data", name: "state.serviceData", type: "text", itemTemplate: function(value, item) {
                  i = i + 1;
                 var data = Object.keys(value);
                 return strongS(i)+data.join("<br>")+strongE(i);
                 }
             },
-            { title: "Link", name: "id", type: "text", align: "center", width: 30, itemTemplate: function(value) {
+            { title: "Link", name: "state.id", type: "text", align: "center", width: 30, itemTemplate: function(value) {
                  var res = "<a target='_blank' href='"+MAIN_URL+"/api/v1/sidis/eas/services/"+value.id+"'>o</a>";
                  i = i + 10;
                 return strongS(i)+res+strongE(i); }
