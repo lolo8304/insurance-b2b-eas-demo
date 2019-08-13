@@ -249,7 +249,7 @@ public class ServiceFlow {
              * ===========================================================================*/
             // We build our transaction.
             getProgressTracker().setCurrentStep(BUILDING);
-            if (ServiceState.State.SHARED.hasLaterState(service.getState())) {
+            if (ServiceState.State.SHARED.hasLaterState(newService.getState())) {
                 TransactionBuilder transactionBuilder = getTransactionBuilderSignedByParticipants(
                         newService,
                         new ServiceContract.Commands.ActionAfterShare(this.action));
@@ -265,7 +265,7 @@ public class ServiceFlow {
                 } else {
                     return signCollectAndFinalize(me, newService.getServiceProvider(), transactionBuilder);
                 }
-            } else if (ServiceState.State.SHARED.hasEarlierState(service.getState())) {
+            } else if (ServiceState.State.SHARED.hasEarlierState(newService.getState())) {
                 getProgressTracker().setCurrentStep(BUILDING);
                 TransactionBuilder transactionBuilder = getTransactionBuilderSignedByParticipants(
                         service,

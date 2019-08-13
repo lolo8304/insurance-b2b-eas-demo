@@ -54,4 +54,13 @@ public class StateMachineTests {
         Assert.assertEquals("created is before of SHARED", true, sharedState.hasEarlierState(createdState));
     }
 
+
+    @Test
+    public void testAcceptAfterShared() {
+        State sharedState = State.valueOf("SHARED");
+        State acceptedState = State.valueOf("ACCEPTED");
+        Assert.assertEquals("accept has earlier shared", true, acceptedState.hasEarlierState(sharedState));
+        Assert.assertEquals("shared is later accept", true, sharedState.hasLaterState(acceptedState));
+    }
+
 }
