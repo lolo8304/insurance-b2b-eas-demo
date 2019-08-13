@@ -143,22 +143,41 @@ function makeOptions(id, list) {
 function onSelectionChanged(select) {
     if ($(select).val() != '') {
             var url = $(select).val();
-            stopRefresh();
-            $.ajax(
-                {
-                    url: url,
-                    method: "POST",
-                    headers: {
-                        "Content-Type" : "application/x-www-form-urlencoded"
-                    },
-                    data: ""
-                }
-            ).done(function(result) {
-                forceRefreshGrids()
-            }).fail(function(jqXHR, textStatus) {
-                alert(jqXHR.responseText);
-                forceRefreshGrids();
-            });
+            var action = url.split("/").reverse()[0];
+            if (action != "SHARE") {
+                stopRefresh();
+                $.ajax(
+                    {
+                        url: url,
+                        method: "POST",
+                        headers: {
+                            "Content-Type" : "application/x-www-form-urlencoded"
+                        },
+                        data: ""
+                    }
+                ).done(function(result) {
+                    forceRefreshGrids()
+                }).fail(function(jqXHR, textStatus) {
+                    alert(jqXHR.responseText);
+                    forceRefreshGrids();
+                });
+            } else {
+                stopRefresh();
+                $.ajax(
+                    {
+                        url: url,
+                        method: "POST",
+                        headers: {
+                            "Content-Type" : "application/x-www-form-urlencoded"
+                        },
+                        data: "service-provider="+encodeURI(ME_RANDOM_PEER)
+                    }
+                ).done(function(result) {
+                    forceRefreshGrids()
+                }).fail(function(jqXHR, textStatus) {
+                    alert(jqXHR.responseText);
+                    forceRefreshGrids();
+                });            }
 
     }
 };
@@ -232,11 +251,14 @@ function price(price) {
 
 
 var ME=""
+var ME_RANDOM_PEER=""
 var ME_brokerMandate=""
 var ME_insuranceMandates=[]
 var ME_insurers=[]
 
-
+function getRandomInt(max) {
+  return Math.floor(Math.random() * Math.floor(max));
+}
 
 $(document).ready(function(){
 
@@ -257,6 +279,13 @@ $(document).ready(function(){
       $( "#party_me" ).html(e.statusText );
     });
 
+    $.get({
+        url: MAIN_URL+"/api/v1/sidis/eas/peers",
+        data: {        },
+        success: function( result ) {
+            ME_RANDOM_PEER = result.peers[getRandomInt(result.peers.length)].x500Principal.name;
+        }
+    });
 
     $.get({
         url: MAIN_URL+"/api/v1/sidis/eas/services/",

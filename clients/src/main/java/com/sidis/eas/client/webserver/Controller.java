@@ -201,25 +201,50 @@ public class Controller {
     @ResponseBody
     public ResponseEntity<StateAndLinks<ServiceState>> serviceAction(
             HttpServletRequest request,
+            @RequestParam(value = "service-provider", required = false) String serviceProvider,
             @PathVariable("id") String id,
             @PathVariable("action") String action) {
-        if (ServiceState.StateTransition.valueOf(action) == null) {
+
+        ServiceState.State state = ServiceState.StateTransition.valueOf(action).getNextState();
+        if (state == null) {
             return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
                     .body(new StateAndLinks<ServiceState>().error("illegal action <"+action+">. Method not allowed"));
         }
         UniqueIdentifier uid = new UniqueIdentifier(null, UUID.fromString(id));
         try {
-            final SignedTransaction signedTx = proxy
-                    .startTrackedFlowDynamic(ServiceFlow.Action.class,
-                            uid,
-                            action)
-                    .getReturnValue()
-                    .get();
+            if (state.equals(ServiceState.State.SHARED)) {
+                if (serviceProvider == null || serviceProvider.isEmpty()) {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                            .body(new StateAndLinks<ServiceState>().error("service-provider not specified in post"));
+                }
+                Party serviceProviderParty = proxy.wellKnownPartyFromX500Name(CordaX500Name.parse(serviceProvider));
+                if (serviceProviderParty == null){
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                            .body(new StateAndLinks<ServiceState>().error("service-provider not a valid peer."));
+                }
+                final SignedTransaction signedTx = proxy
+                        .startTrackedFlowDynamic(ServiceFlow.Share.class,
+                                uid,
+                                serviceProviderParty)
+                        .getReturnValue()
+                        .get();
 
-            StateVerifier verifier = StateVerifier.fromTransaction(signedTx, null);
-            ServiceState service = verifier.output().one(ServiceState.class).object();
-            return this.getResponse(request, service, HttpStatus.OK);
+                StateVerifier verifier = StateVerifier.fromTransaction(signedTx, null);
+                ServiceState service = verifier.output().one(ServiceState.class).object();
+                return this.getResponse(request, service, HttpStatus.OK);
 
+            } else {
+                final SignedTransaction signedTx = proxy
+                        .startTrackedFlowDynamic(ServiceFlow.Action.class,
+                                uid,
+                                action)
+                        .getReturnValue()
+                        .get();
+
+                StateVerifier verifier = StateVerifier.fromTransaction(signedTx, null);
+                ServiceState service = verifier.output().one(ServiceState.class).object();
+                return this.getResponse(request, service, HttpStatus.OK);
+            }
         } catch (Throwable ex) {
             logger.error(ex.getMessage(), ex);
             return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED)

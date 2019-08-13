@@ -137,6 +137,10 @@ public class ServiceState implements LinearState {
             return this.nextState.isFinalState();
         }
         @JsonIgnore
+        public State getNextState() {
+            return this.nextState;
+        }
+        @JsonIgnore
         public boolean willBeSharingState() {
             return this.nextState.isSharingState();
         }
