@@ -147,7 +147,7 @@ function show_services(tagName, result) {
         filtering: false,
         autoload: true,
 
-        data: result.reverse(),
+        data: result.reverse().map ( x => x.state ),
 
         fields: [
 

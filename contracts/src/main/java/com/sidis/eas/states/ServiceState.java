@@ -62,6 +62,7 @@ public class ServiceState implements LinearState {
         public StateType getType() { return this.type; }
         @JsonIgnore
         public boolean isFinalState() { return this.type == StateType.FINAL; }
+        public boolean isInitialState() { return this.type == StateType.INITIAL; }
         public void addTransition(StateTransition transition) {
             this.transitions.add(transition);
         }

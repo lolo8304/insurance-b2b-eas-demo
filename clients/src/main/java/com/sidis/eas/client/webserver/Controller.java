@@ -53,6 +53,8 @@ public class Controller {
     private final static String BASE_PATH = "sidis/eas";
 
     public Controller(NodeRPCConnection rpc) {
+        ServiceState.State.values();
+        ServiceState.StateTransition.values();
         if (DEBUG && rpc.proxy == null) {
             this.proxy = null;
             this.myLegalName = null;
