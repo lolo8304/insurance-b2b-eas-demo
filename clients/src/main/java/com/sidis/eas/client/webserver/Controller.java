@@ -206,10 +206,11 @@ public class Controller {
         if (ServiceState.StateTransition.valueOf(action) == null) {
             return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(null);
         }
+        UniqueIdentifier uid = new UniqueIdentifier(null, UUID.fromString(id));
         try {
             final SignedTransaction signedTx = proxy
                     .startTrackedFlowDynamic(ServiceFlow.Action.class,
-                            id,
+                            uid,
                             action)
                     .getReturnValue()
                     .get();
