@@ -35,7 +35,6 @@ function refreshGrids() {
         $( "#runningAnimation" ).hide();
         history.go(0)
     } else {
-        timedRefresh(10000);
     }
 }
 function forceRefreshGrids() {
@@ -44,62 +43,16 @@ function forceRefreshGrids() {
     refreshGrids();
 }
 
-function stopRefresh() {
-    toRefresh = false;
+function animationOff() {
+    $( "#runningAnimation" ).hide();
+}
+function animationOn() {
     $( "#runningAnimation" ).show();
 }
 
-function editTemplateData(self){
-    var tokenbefore = $(self).attr("value");
-    var token = prompt("Please enter Bearer token", tokenbefore );
-    if (token != null && tokenbefore != token) {
-        var yourName = prompt("Please enter your name", "" );
-        if (yourName != null) {
-            stopRefresh();
-            $.ajax(
-                {
-                    url: MAIN_URL+"/api/v1/sidis/eas/patient-records/",
-                    method: "PATCH",
-                    headers: {
-                        "Content-Type" : "application/x-www-form-urlencoded"
-                    },
-                    data: "data={ \"wallet\" : { \"token\" : \""+token+"\",  \"token-updated-by\" : \""+yourName+"\"} }"
-                }
-            ).done(function(result) {
-                forceRefreshGrids()
-            }).fail(function(jqXHR, textStatus) {
-                alert(jqXHR.responseText);
-                forceRefreshGrids();
-            });
-        }
-    }
-}
-
-function saveDummyPatientRecord(self, method){
-    if (confirm('Are you sure to initialize patient record?')) {
-        stopRefresh();
-        $.ajax(
-            {
-                url: MAIN_URL+"/api/v1/sidis/eas/patient-records/",
-                method: method,
-                headers: {
-                    "Content-Type" : "application/x-www-form-urlencoded"
-                },
-                data: "data="+getPatientDemo()
-            }
-        ).done(function(result) {
-            forceRefreshGrids()
-        }).fail(function(jqXHR, textStatus) {
-            alert(jqXHR.responseText);
-            forceRefreshGrids();
-        });
-    }
-}
-
-
 
 function saveDummyService(self, service, spShort, price, optionalIds){
-    stopRefresh();
+    animationOn();
     $.ajax(
         {
             url: MAIN_URL+"/api/v1/sidis/eas/services/",
@@ -110,7 +63,7 @@ function saveDummyService(self, service, spShort, price, optionalIds){
             data: "service-name="+encodeURI(service)+"&data="+encodeURI(getServiceData())+"&price="+encodeURI(price)
         }
     ).done(function(result) {
-        forceRefreshGrids()
+
     }).fail(function(jqXHR, textStatus) {
         alert(jqXHR.responseText);
         forceRefreshGrids();
@@ -145,7 +98,7 @@ function onSelectionChanged(select) {
             var url = $(select).val();
             var action = url.split("/").reverse()[0];
             if (action != "SHARE") {
-                stopRefresh();
+                animationOn();
                 $.ajax(
                     {
                         url: url,
@@ -156,13 +109,13 @@ function onSelectionChanged(select) {
                         data: ""
                     }
                 ).done(function(result) {
-                    forceRefreshGrids()
+
                 }).fail(function(jqXHR, textStatus) {
                     alert(jqXHR.responseText);
                     forceRefreshGrids();
                 });
             } else {
-                stopRefresh();
+                animationOn();
                 $.ajax(
                     {
                         url: url,
@@ -173,7 +126,7 @@ function onSelectionChanged(select) {
                         data: "service-provider="+encodeURI(ME_RANDOM_PEER)
                     }
                 ).done(function(result) {
-                    forceRefreshGrids()
+
                 }).fail(function(jqXHR, textStatus) {
                     alert(jqXHR.responseText);
                     forceRefreshGrids();
@@ -260,8 +213,7 @@ function getRandomInt(max) {
   return Math.floor(Math.random() * Math.floor(max));
 }
 
-$(document).ready(function(){
-
+function get_me() {
     $.get({
         url: MAIN_URL+"/api/v1/sidis/eas/me",
         data: {        },
@@ -278,7 +230,9 @@ $(document).ready(function(){
     }).fail(function(e) {
       $( "#party_me" ).html(e.statusText );
     });
+}
 
+function get_peers() {
     $.get({
         url: MAIN_URL+"/api/v1/sidis/eas/peers",
         data: {        },
@@ -286,7 +240,9 @@ $(document).ready(function(){
             ME_RANDOM_PEER = result.peers[getRandomInt(result.peers.length)].x500Principal.name;
         }
     });
+}
 
+function get_services() {
     $.get({
         url: MAIN_URL+"/api/v1/sidis/eas/services/",
         data: { },
@@ -294,12 +250,25 @@ $(document).ready(function(){
             show_services("#services-template", result);
         }
     });
+}
 
+$(document).ready(function(){
+    get_me();
+    get_peers();
+    get_services();
 
-    timedRefresh(10000);
+    connectWebSocket();
 
 });
 
-function timedRefresh(timeoutPeriod) {
-    setTimeout("refreshGrids();",timeoutPeriod);
+function connectWebSocket() {
+    var socket = new SockJS('/gs-guide-websocket');
+    stompClient = Stomp.over(socket);
+    stompClient.connect({}, function (frame) {
+        console.log('Connected: ' + frame);
+        stompClient.subscribe('/topic/sidis/eas/vaultChanged', function (changes) {
+            get_services();
+            animationOff();
+        });
+    });
 }
