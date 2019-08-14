@@ -35,11 +35,8 @@ public abstract class VaultChangeScheduler<T extends LinearState> {
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
-    public VaultChangeScheduler(NodeRPCConnection rpc) {
-        this.typeOfT = (Class<T>)
-                ((ParameterizedType) getClass()
-                        .getGenericSuperclass())
-                        .getActualTypeArguments()[0];
+    protected VaultChangeScheduler(NodeRPCConnection rpc, Class<T> typeOfT) {
+        this.typeOfT = typeOfT;
         if (Controller.DEBUG && rpc.proxy == null) {
             this.proxy = null;
             this.myLegalName = null;

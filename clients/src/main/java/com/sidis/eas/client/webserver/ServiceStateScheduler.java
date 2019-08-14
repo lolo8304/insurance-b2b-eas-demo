@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class ServiceStateScheduler extends VaultChangeScheduler<ServiceState> {
     public ServiceStateScheduler(NodeRPCConnection rpc) {
-        super(rpc);
+        super(rpc, ServiceState.class);
     }
 
     @Override
