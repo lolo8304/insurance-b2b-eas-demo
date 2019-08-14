@@ -3,6 +3,7 @@ package com.sidis.eas.states;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import net.corda.client.jackson.JacksonSupport;
 
 import java.io.IOException;
 import java.util.LinkedHashMap;
@@ -14,7 +15,7 @@ public class JsonHelper {
     };
 
     static String convertJsonToString(Map<String, Object> data) {
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = JacksonSupport.createNonRpcMapper();
         try {
             return mapper.writeValueAsString(data);
         } catch (IOException e) {
@@ -24,7 +25,7 @@ public class JsonHelper {
 
     public static Map<String, Object> convertStringToJson(String dataString) {
         if (dataString != null && !dataString.isEmpty()) {
-            ObjectMapper mapper = new ObjectMapper();
+            ObjectMapper mapper = JacksonSupport.createNonRpcMapper();
             mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
             try {
                 return mapper.readValue(dataString, TYPE_REF_MAP);

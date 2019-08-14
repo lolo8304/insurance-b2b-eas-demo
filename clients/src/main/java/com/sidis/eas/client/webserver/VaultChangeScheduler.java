@@ -3,6 +3,7 @@ package com.sidis.eas.client.webserver;
 import net.corda.core.contracts.LinearState;
 import net.corda.core.identity.CordaX500Name;
 import net.corda.core.messaging.CordaRPCOps;
+import net.corda.core.messaging.DataFeed;
 import net.corda.core.node.services.Vault;
 import net.corda.core.node.services.vault.PageSpecification;
 import net.corda.core.node.services.vault.QueryCriteria;
@@ -30,8 +31,6 @@ public abstract class VaultChangeScheduler<T extends LinearState> {
     private final CordaX500Name myLegalName;
     private final Class<T> typeOfT;
 
-    private Long nof = 0L;
-
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
@@ -47,28 +46,34 @@ public abstract class VaultChangeScheduler<T extends LinearState> {
 
     }
 
-    @Scheduled(fixedRate = 1000)
-    public void scheduleTaskWithFixedRate() {
+    public void installVaultFeedAndSubscribeToTopic(String topicName) {
         if (proxy != null) {
-            PageSpecification pageSpec = new PageSpecification(0, 5);
-            Vault.Page<T> serviceStatePage = proxy.vaultQueryByWithPagingSpec(typeOfT, new QueryCriteria.VaultQueryCriteria(), pageSpec);
-            Long newNof = serviceStatePage.getTotalStatesAvailable();
-            logger.info("Fixed Rate Task :: Execution Time - {} - name={} - count={}", dateTimeFormatter.format(LocalDateTime.now()), this.typeOfT.getSimpleName(), newNof );
-            if (newNof != this.nof) {
-                this.nof = newNof;
-                this.triggerChanged(typeOfT, newNof);
-            }
+            PageSpecification pageSpec = new PageSpecification(1, 1);
+            DataFeed<Vault.Page<T>, Vault.Update<T>> dataFeed = proxy.vaultTrackByWithPagingSpec(typeOfT, new QueryCriteria.VaultQueryCriteria(), pageSpec);
+            logger.info("Vault Update Feed :: {} - subscribed for {}", dateTimeFormatter.format(LocalDateTime.now()), this.typeOfT.getSimpleName());
+            dataFeed.getUpdates().subscribe(
+                    next -> {
+                        this.triggerChanged(topicName, typeOfT);
+                        logger.info("Vault Feed Updated :: {} - name={}", dateTimeFormatter.format(LocalDateTime.now()), this.typeOfT.getSimpleName());
+                    },
+                    error -> {
+                        logger.info("Vault Feed Exception :: {} - name={} - error={} - message={}",
+                                dateTimeFormatter.format(LocalDateTime.now()),
+                                this.typeOfT.getSimpleName(),
+                                error.getClass().getSimpleName(),
+                                error.getMessage());
+                    },
+                    () -> {
+
+                    }
+            );
         }
     }
 
-    public abstract String getTopicName();
-
-
-    protected void triggerChanged(Class<T> typeOfT, Long nof) {
+    protected void triggerChanged(String topicName, Class<T> typeOfT) {
         LinkedHashMap<String, Object> trigger = new LinkedHashMap<>();
         trigger.put("stateClass", typeOfT.getName());
-        trigger.put("totalCount", nof);
-        this.messagingTemplate.convertAndSend(this.getTopicName(), trigger);
+        this.messagingTemplate.convertAndSend(topicName, trigger);
     }
 
 }

@@ -1,5 +1,6 @@
 package com.sidis.eas.client.webserver;
 
+import net.corda.client.jackson.JacksonSupport;
 import net.corda.client.rpc.CordaRPCClient;
 import net.corda.client.rpc.CordaRPCConnection;
 import net.corda.core.messaging.CordaRPCOps;
@@ -35,6 +36,7 @@ public class NodeRPCConnection implements AutoCloseable {
 
     @PostConstruct
     public void initialiseNodeRPCConnection() {
+        JacksonSupport.createNonRpcMapper();
         try {
             NetworkHostAndPort rpcAddress = new NetworkHostAndPort(host, rpcPort);
             CordaRPCClient rpcClient = new CordaRPCClient(rpcAddress);
