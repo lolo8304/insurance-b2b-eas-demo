@@ -83,7 +83,7 @@ public class Controller {
     }
     private ResponseEntity<StateAndLinks<ServiceState>> createUpdateActionResponse(HttpServletRequest request, ServiceState serviceState, HttpStatus status) throws URISyntaxException {
         ResponseEntity<StateAndLinks<ServiceState>> response = this.getResponse(request, serviceState, status);
-        this.messagingTemplate.convertAndSend(response.getBody());
+        this.messagingTemplate.convertAndSend("/topic/sidis/eas/services", response.getBody());
         return response;
     }
 
