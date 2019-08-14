@@ -9,6 +9,7 @@ import net.corda.core.contracts.UniqueIdentifier;
 import net.corda.core.flows.FlowLogic;
 import net.corda.core.identity.Party;
 import net.corda.core.transactions.SignedTransaction;
+import net.corda.testing.node.StartedMockNode;
 
 import java.util.concurrent.ExecutionException;
 
@@ -56,6 +57,12 @@ abstract public class SidisBaseFlowTests extends SidisBaseTests {
     protected SignedTransaction newServiceActionFlow(UniqueIdentifier id, String action) throws ExecutionException, InterruptedException {
         FlowLogic<SignedTransaction> flow = new ServiceFlow.Action(id, action);
         CordaFuture<SignedTransaction> future = insurer1Node.startFlow(flow);
+        network.runNetwork();
+        return future.get();
+    }
+    protected SignedTransaction newServiceActionFlowBy(UniqueIdentifier id, String action, StartedMockNode node) throws ExecutionException, InterruptedException {
+        FlowLogic<SignedTransaction> flow = new ServiceFlow.Action(id, action);
+        CordaFuture<SignedTransaction> future = node.startFlow(flow);
         network.runNetwork();
         return future.get();
     }

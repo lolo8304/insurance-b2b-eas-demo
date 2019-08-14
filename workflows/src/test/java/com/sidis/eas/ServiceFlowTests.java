@@ -125,6 +125,40 @@ public class ServiceFlowTests extends SidisBaseFlowTests {
     }
 
 
+
+    @Test
+    public void action_ACCEPT_by_counterparty_service() throws Exception {
+        StateVerifier verifier = StateVerifier.fromTransaction(
+                this.newServiceCreateFlow("Exit", dataJSONString(), 7),
+                this.ledgerServices);
+        ServiceState service = verifier
+                .output().one()
+                .one(ServiceState.class)
+                .object();
+
+        StateVerifier verifierS = StateVerifier.fromTransaction(
+                this.newServiceShareFlow(service.getId(), insurer2Party),
+                this.ledgerServices);
+        ServiceState serviceS = verifierS
+                .output().one()
+                .one(ServiceState.class)
+                .object();
+        Assert.assertEquals("state is SHARED", "SHARED", serviceS.getState().toString());
+
+        StateVerifier verifierA = StateVerifier.fromTransaction(
+                this.newServiceActionFlowBy(serviceS.getId(), "ACCEPT", insurer2Node),
+                this.ledgerServices);
+        ServiceState serviceA = verifierA
+                .output().one()
+                .one(ServiceState.class)
+                .object();
+
+        Assert.assertEquals("ZVP be false", "false", serviceA.getData("coverages.ZVP"));
+        Assert.assertEquals("insurer2 must be service provider", insurer2Party, serviceA.getServiceProvider());
+        Assert.assertEquals("state is ACCEPTED", "ACCEPTED", serviceA.getState().toString());
+    }
+
+
     @Test
     public void action_CONFIRM_service() throws Exception {
         StateVerifier verifier = StateVerifier.fromTransaction(

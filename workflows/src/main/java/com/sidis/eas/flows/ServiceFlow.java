@@ -157,7 +157,7 @@ public class ServiceFlow {
 
         @Override
         public ProgressTracker getProgressTracker() {
-            return this.progressTracker_nosync;
+            return this.progressTracker_sync;
         }
 
 
@@ -196,7 +196,7 @@ public class ServiceFlow {
              *          TODO 2 - Write our contract to control issuance!
              * ===========================================================================*/
             // We check our transaction is valid based on its contracts.
-            return signCollectAndFinalize(me, this.serviceProvider, transactionBuilder);
+            return signSyncCollectAndFinalize(me, this.serviceProvider, transactionBuilder);
         }
 
     }
@@ -264,7 +264,7 @@ public class ServiceFlow {
                 if (newService.getServiceProvider() == null) {
                     return signAndFinalize(transactionBuilder);
                 } else {
-                    return signCollectAndFinalize(me, newService.getServiceProvider(), transactionBuilder);
+                    return signCollectAndFinalize(me, newService.getCounterParties(me), transactionBuilder);
                 }
             } else if (!newService.getState().equals(ServiceState.State.SHARED)) {
                 // current state is predecessor of SHARED or parallel states of shared
@@ -326,7 +326,7 @@ public class ServiceFlow {
         @Suspendable
         @Override
         public Unit call() throws FlowException {
-            return this.receiveCounterpartiesNoTxChecking();
+            return this.receiveIdentitiesCounterpartiesNoTxChecking();
         }
     }
     @InitiatedBy(Action.class)

@@ -1,6 +1,7 @@
 package com.sidis.eas.states;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.collect.Sets;
 import com.sidis.eas.contracts.ServiceContract;
 import net.corda.core.contracts.BelongsToContract;
 import net.corda.core.contracts.LinearState;
@@ -243,6 +244,11 @@ public class ServiceState implements LinearState {
     }
     public Map<String, Object> getServiceData() {
         return serviceData;
+    }
+    public Set<Party> getCounterParties(Party me) {
+        if (this.getInitiator().equals(me)) return Sets.newHashSet(this.serviceProvider);
+        if (this.getServiceProvider().equals(me)) return Sets.newHashSet(this.initiator);
+        throw new IllegalStateException("The passed party <"+me+"> is no counterparty");
     }
 
 
