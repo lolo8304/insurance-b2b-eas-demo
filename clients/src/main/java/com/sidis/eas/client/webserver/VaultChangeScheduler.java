@@ -50,7 +50,8 @@ public abstract class VaultChangeScheduler<T extends LinearState> {
     @Scheduled(fixedRate = 1000)
     public void scheduleTaskWithFixedRate() {
         if (proxy != null) {
-            Vault.Page<T> serviceStatePage = proxy.vaultQuery(typeOfT);
+            PageSpecification pageSpec = new PageSpecification(0, 5);
+            Vault.Page<T> serviceStatePage = proxy.vaultQueryByWithPagingSpec(typeOfT, new QueryCriteria.VaultQueryCriteria(), pageSpec);
             Long newNof = serviceStatePage.getTotalStatesAvailable();
             logger.info("Fixed Rate Task :: Execution Time - {} - name={} - count={}", dateTimeFormatter.format(LocalDateTime.now()), this.typeOfT.getSimpleName(), newNof );
             if (newNof != this.nof) {
