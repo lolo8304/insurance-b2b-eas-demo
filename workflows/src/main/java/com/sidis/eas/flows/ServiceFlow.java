@@ -196,7 +196,7 @@ public class ServiceFlow {
              *          TODO 2 - Write our contract to control issuance!
              * ===========================================================================*/
             // We check our transaction is valid based on its contracts.
-            return signSyncCollectAndFinalize(me, this.serviceProvider, transactionBuilder);
+            return signSyncCollectAndFinalize(this.serviceProvider, transactionBuilder);
         }
 
     }
@@ -217,7 +217,7 @@ public class ServiceFlow {
 
         @Override
         public ProgressTracker getProgressTracker() {
-            return this.progressTracker_nosync;
+            return this.progressTracker_sync;
         }
 
         private ServiceState.StateTransition getTransition() {
@@ -249,7 +249,7 @@ public class ServiceFlow {
              * ===========================================================================*/
             // We build our transaction.
             getProgressTracker().setCurrentStep(BUILDING);
-            if (ServiceState.State.SHARED.hasLaterState(newService.getState())) {
+            if (newService.getState().isLaterState(ServiceState.State.SHARED)) {
                 // new state is follow up state of SHARED
                 TransactionBuilder transactionBuilder = getTransactionBuilderSignedByParticipants(
                         newService,
@@ -264,7 +264,7 @@ public class ServiceFlow {
                 if (newService.getServiceProvider() == null) {
                     return signAndFinalize(transactionBuilder);
                 } else {
-                    return signCollectAndFinalize(me, newService.getCounterParties(me), transactionBuilder);
+                    return signSyncCollectAndFinalize(newService.getCounterParties(me), transactionBuilder);
                 }
             } else if (!newService.getState().equals(ServiceState.State.SHARED)) {
                 // current state is predecessor of SHARED or parallel states of shared
@@ -298,7 +298,7 @@ public class ServiceFlow {
         @Suspendable
         @Override
         public Unit call() throws FlowException {
-            return this.receiveCounterpartiesNoTxChecking();
+            return this.receiveIdentitiesCounterpartiesNoTxChecking();
         }
     }
 
@@ -312,7 +312,7 @@ public class ServiceFlow {
         @Suspendable
         @Override
         public Unit call() throws FlowException {
-            return this.receiveCounterpartiesNoTxChecking();
+            return this.receiveIdentitiesCounterpartiesNoTxChecking();
         }
     }
 
@@ -339,7 +339,7 @@ public class ServiceFlow {
         @Suspendable
         @Override
         public Unit call() throws FlowException {
-            return this.receiveCounterpartiesNoTxChecking();
+            return this.receiveIdentitiesCounterpartiesNoTxChecking();
         }
     }
 

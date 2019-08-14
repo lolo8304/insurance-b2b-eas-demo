@@ -77,6 +77,15 @@ public class ServiceState implements LinearState {
             if (this.isFinalState()) return false;
             return this.transitions.stream().anyMatch(x -> x.toString().equals(action));
         }
+        public boolean isLaterState(State state) {
+            if (this.equals(state)) return false;
+            return state.hasLaterState(this);
+        }
+        public boolean isEarlierState(State state) {
+            if (this.equals(state)) return false;
+            return state.hasEarlierState(this);
+        }
+
         public boolean hasLaterState(State state) {
             if (this.equals(state)) return false;
             return hasLaterState(state, new HashSet<>());

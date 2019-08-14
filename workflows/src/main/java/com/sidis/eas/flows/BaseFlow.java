@@ -48,38 +48,39 @@ public abstract class BaseFlow extends FlowLogic<SignedTransaction> {
 
     @Suspendable
     protected SignedTransaction signAndFinalize(TransactionBuilder transactionBuilder) throws FlowException {
-        ProgressTracker tracker = this.getProgressTracker();
-
-        tracker.setCurrentStep(VERIFYING);
-        transactionBuilder.verify(getServiceHub());
-
-        // We sign the transaction with our private key, making it immutable.
-        tracker.setCurrentStep(SIGNING);
-        SignedTransaction signedTransaction = getServiceHub().signInitialTransaction(transactionBuilder);
-
-        // We get the transaction notarised and recorded automatically by the platform.
-        tracker.setCurrentStep(FINALISING);
-        return subFlow(new FinalityFlow(signedTransaction, Collections.emptyList(), FINALISING.childProgressTracker()));
+        return this.signSyncCollectAndFinalize(false, Collections.EMPTY_SET, transactionBuilder);
     }
 
     @Suspendable
-    protected SignedTransaction signSyncCollectAndFinalize(Party me, Party counterparty, TransactionBuilder transactionBuilder) throws FlowException {
-        return signSyncCollectAndFinalize(me, true, Collections.singleton(counterparty), transactionBuilder);
+    protected SignedTransaction signSyncCollectAndFinalize(Party counterparty, TransactionBuilder transactionBuilder) throws FlowException {
+        Set<Party> set = Collections.EMPTY_SET;
+        if (counterparty != null) {
+            set = Collections.singleton(counterparty);
+        }
+        return signSyncCollectAndFinalize(set, transactionBuilder);
+    }
+    @Suspendable
+    protected SignedTransaction signSyncCollectAndFinalize(Set<Party> counterparties, TransactionBuilder transactionBuilder) throws FlowException {
+        return signSyncCollectAndFinalize(true, counterparties, transactionBuilder);
     }
 
 
     @Suspendable
-    protected SignedTransaction signCollectAndFinalize(Party me, Party counterparty, TransactionBuilder transactionBuilder) throws FlowException {
-        return signCollectAndFinalize(me, Collections.singleton(counterparty), transactionBuilder);
+    protected SignedTransaction signCollectAndFinalize(Party counterparty, TransactionBuilder transactionBuilder) throws FlowException {
+        Set<Party> set = Collections.EMPTY_SET;
+        if (counterparty != null) {
+            set = Collections.singleton(counterparty);
+        }
+        return signCollectAndFinalize(set, transactionBuilder);
     }
 
     @Suspendable
-    protected SignedTransaction signCollectAndFinalize(Party me, Set<Party> counterparties, TransactionBuilder transactionBuilder) throws FlowException {
-        return signSyncCollectAndFinalize(me, false, counterparties, transactionBuilder);
+    protected SignedTransaction signCollectAndFinalize(Set<Party> counterparties, TransactionBuilder transactionBuilder) throws FlowException {
+        return signSyncCollectAndFinalize(false, counterparties, transactionBuilder);
     }
 
         @Suspendable
-    protected SignedTransaction signSyncCollectAndFinalize(Party me, boolean syncIdentities, Set<Party> counterparties, TransactionBuilder transactionBuilder) throws FlowException {
+    private SignedTransaction signSyncCollectAndFinalize(boolean syncIdentities, Set<Party> counterparties, TransactionBuilder transactionBuilder) throws FlowException {
         ProgressTracker tracker = this.getProgressTracker();
         tracker.setCurrentStep(VERIFYING);
         transactionBuilder.verify(getServiceHub());
@@ -88,36 +89,41 @@ public abstract class BaseFlow extends FlowLogic<SignedTransaction> {
         // We sign the transaction with our private key, making it immutable.
         SignedTransaction signedTx = getServiceHub().signInitialTransaction(transactionBuilder);
 
-        // prepare counterparties flow sessions to sync and / or collec
+        Integer otherPartiesFlowVersion = 2;
         Set<FlowSession> otherPartySessions = new HashSet<>();
-        Integer otherPartiesFlowVersion = 1;
-        for(Party counterparty : counterparties) {
-            FlowSession flowSession = initiateFlow(counterparty);
-            otherPartiesFlowVersion = flowSession.getCounterpartyFlowInfo().getFlowVersion();
-            otherPartySessions.add(flowSession);
-        }
 
-        // Send any keys and certificates so the signers can verify each other's identity
-        if (syncIdentities) {
-            tracker.setCurrentStep(SYNCING);
-            subFlow(new IdentitySyncFlow.Send(otherPartySessions, signedTx.getTx(), SYNCING.childProgressTracker()));
-        }
+        //sync and collect counterparties only if counterparties exist
+        if (counterparties != null && !counterparties.isEmpty()) {
+            // prepare counterparties flow sessions to sync and / or collec
+            for(Party counterparty : counterparties) {
+                FlowSession flowSession = initiateFlow(counterparty);
+                otherPartiesFlowVersion = flowSession.getCounterpartyFlowInfo().getFlowVersion();
+                otherPartySessions.add(flowSession);
+            }
 
-        // Send the state to all counterparties, and receive it back with their signature.
-        tracker.setCurrentStep(COLLECTING);
-        final SignedTransaction fullySignedTx = subFlow(
-                new CollectSignaturesFlow(
-                        signedTx,
-                        otherPartySessions,
-                        ImmutableSet.of(getOurIdentity().getOwningKey()),
-                        COLLECTING.childProgressTracker()));
+            // Send any keys and certificates so the signers can verify each other's identity
+            if (syncIdentities) {
+                tracker.setCurrentStep(SYNCING);
+                subFlow(new IdentitySyncFlow.Send(otherPartySessions, signedTx.getTx(), SYNCING.childProgressTracker()));
+            }
+
+            // Send the state to all counterparties, and receive it back with their signature.
+            tracker.setCurrentStep(COLLECTING);
+            final SignedTransaction fullySignedTx = subFlow(
+                    new CollectSignaturesFlow(
+                            signedTx,
+                            otherPartySessions,
+                            ImmutableSet.of(getOurIdentity().getOwningKey()),
+                            COLLECTING.childProgressTracker()));
+            signedTx = fullySignedTx;
+        }
         // We get the transaction notarised and recorded automatically by the platform.
         // send a copy to current issuer
         tracker.setCurrentStep(FINALISING);
         if (otherPartiesFlowVersion == 1) {
-            return subFlow(new FinalityFlow(fullySignedTx, Collections.emptyList(), FINALISING.childProgressTracker()));
+            return subFlow(new FinalityFlow(signedTx, Collections.emptyList(), FINALISING.childProgressTracker()));
         } else {
-            return subFlow(new FinalityFlow(fullySignedTx, otherPartySessions, FINALISING.childProgressTracker()));
+            return subFlow(new FinalityFlow(signedTx, otherPartySessions, FINALISING.childProgressTracker()));
         }
     }
 
