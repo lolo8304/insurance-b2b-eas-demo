@@ -19,7 +19,7 @@ wait_until_first_started(){
                 get_sshd
                 nof=$retval
 		x=$(( $x + 10 ))
-                echo "sleot $x s until first started...."
+                echo "slept $x s until first started...."
                 sleep 10s
         done
         echo "$nof started"
@@ -33,7 +33,7 @@ wait_until_all_started() {
         do
                 get_sshd
                 nof=$retval
-                echo "slept $xs to see if all started... $nof"
+                echo "slept $x s to see if all started... $nof"
                 sleep 10s
                 x=$(( $x + 10 ))
         done
