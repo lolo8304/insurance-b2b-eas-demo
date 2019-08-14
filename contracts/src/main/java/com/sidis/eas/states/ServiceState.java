@@ -178,6 +178,7 @@ public class ServiceState implements LinearState {
     private final State state;
     @NotNull
     private final String serviceName;
+
     @JsonIgnore
     @NotNull
     private final Party initiator;
@@ -185,6 +186,7 @@ public class ServiceState implements LinearState {
 
     @NotNull
     private final Map<String, Object> serviceData;
+
     @JsonIgnore
     private final Party serviceProvider;
     private final Integer price;
