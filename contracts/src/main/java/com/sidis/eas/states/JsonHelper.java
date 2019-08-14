@@ -85,7 +85,7 @@ public class JsonHelper {
             }
             result = tempMap.get(k.trim());
         }
-        return result.toString();
+        return result == "" ? null : result.toString();
     }
 
 }

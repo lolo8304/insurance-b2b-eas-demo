@@ -6,9 +6,7 @@ import com.sidis.eas.states.ServiceState;
 import com.sidis.eas.states.StateVerifier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import net.corda.core.contracts.LinearState;
 import net.corda.core.contracts.UniqueIdentifier;
-import net.corda.core.flows.FlowLogic;
 import net.corda.core.identity.CordaX500Name;
 import net.corda.core.identity.Party;
 import net.corda.core.messaging.CordaRPCOps;
@@ -18,14 +16,16 @@ import net.corda.core.node.services.vault.QueryCriteria;
 import net.corda.core.transactions.SignedTransaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.annotation.AliasFor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
 
@@ -40,10 +40,13 @@ import static java.util.stream.Collectors.toList;
 @RequestMapping("/api/v1/") // The paths for HTTP requests are relative to this base path.
 public class Controller {
 
-    public static final boolean DEBUG = false;
+    public static final boolean DEBUG = true;
 
     private final CordaRPCOps proxy;
     private final CordaX500Name myLegalName;
+
+    @Autowired
+    private  SimpMessagingTemplate messagingTemplate;
 
     private final List<String> serviceNames = ImmutableList.of("Notary");
 
@@ -77,6 +80,11 @@ public class Controller {
                 .self("services")
                 .links("services", x -> x.getState().getNextActions())
                 .build();
+    }
+    private ResponseEntity<StateAndLinks<ServiceState>> createUpdateActionResponse(HttpServletRequest request, ServiceState serviceState, HttpStatus status) throws URISyntaxException {
+        ResponseEntity<StateAndLinks<ServiceState>> response = this.getResponse(request, serviceState, status);
+        this.messagingTemplate.convertAndSend(response.getBody());
+        return response;
     }
 
     /**
@@ -144,6 +152,44 @@ public class Controller {
         }
     }
 
+    @MessageMapping(value = BASE_PATH + "/services")
+    @SendTo("/topic/sidis/eas/services")
+    public ResponseEntity<StateAndLinks<ServiceState>> createServiceMessage(
+            @RequestParam(name = "message") LinkedHashMap<String, Object> serviceObject) {
+        String serviceName = JsonHelper.getDataValue(serviceObject, "service-name");
+        String data = JsonHelper.getDataValue(serviceObject, "data");
+        Integer price = Integer.parseInt(
+                JsonHelper.getDataValue(serviceObject, "price"));
+        try {
+            if (data == null || data.isEmpty() || JsonHelper.convertStringToJson(data) == null) {
+                data = "{}";
+            }
+        } catch (IllegalStateException ex) {
+            logger.error(ex.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
+        try {
+            final SignedTransaction signedTx = proxy
+                    .startTrackedFlowDynamic(ServiceFlow.Create.class,
+                            serviceName,
+                            data,
+                            price)
+                    .getReturnValue()
+                    .get();
+
+            StateVerifier verifier = StateVerifier.fromTransaction(signedTx, null);
+            ServiceState service = verifier.output().one(ServiceState.class).object();
+            return ResponseEntity.status(HttpStatus.CREATED).body(new StateAndLinks<>(service));
+
+        } catch (Throwable ex) {
+            logger.error(ex.getMessage(), ex);
+            return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED)
+                    .body(new StateAndLinks<ServiceState>().error(ex));
+        }
+    }
+
+
+
     /**
      * create a new patient record with given data
      * @param data string contains json patient data
@@ -178,7 +224,7 @@ public class Controller {
 
             StateVerifier verifier = StateVerifier.fromTransaction(signedTx, null);
             ServiceState service = verifier.output().one(ServiceState.class).object();
-            return this.getResponse(request, service, HttpStatus.CREATED);
+            return this.createUpdateActionResponse(request, service, HttpStatus.CREATED);
 
         } catch (Throwable ex) {
             logger.error(ex.getMessage(), ex);
