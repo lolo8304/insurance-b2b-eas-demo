@@ -34,6 +34,8 @@ import static java.util.stream.Collectors.toList;
 
 /**
  * Define your API endpoints here.
+ * supported by example for WebSockets
+ * https://www.toptal.com/java/stomp-spring-boot-websocket
  */
 @RestController
 @CrossOrigin(origins = "http://localhost:63342")
