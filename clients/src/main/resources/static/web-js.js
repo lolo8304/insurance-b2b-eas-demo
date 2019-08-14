@@ -21,6 +21,9 @@ function connect() {
         stompClient.subscribe('/topic/sidis/eas/services', function (greeting) {
             showGreeting(greeting.body);
         });
+        stompClient.subscribe('/topic/sidis/eas/vaultChanged', function (changes) {
+            showGreeting("Vault changed: "+changes);
+        });
     });
 }
 
