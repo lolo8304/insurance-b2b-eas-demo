@@ -153,7 +153,7 @@ public class ServiceFlow {
 
         @Override
         public ProgressTracker getProgressTracker() {
-            return this.progressTracker_nosync;
+            return this.progressTracker_sync;
         }
 
 
