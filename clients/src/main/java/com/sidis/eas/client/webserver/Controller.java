@@ -127,7 +127,7 @@ public class Controller {
 
     /**
      * receives a unconsumed service with a given ID from the node's vault.
-     * @param id unique identifier as UUID for mandate
+     * @param id unique identifier as UUID for service
      */
     @RequestMapping(
             value = BASE_PATH + "/services/{id}",
@@ -153,6 +153,36 @@ public class Controller {
             return this.getResponse(request, service, HttpStatus.OK);
         }
     }
+
+
+    /**
+     * deletes an unconsumed service with a given ID from the node's vault.
+     * @param id unique identifier as UUID for service
+     */
+    @RequestMapping(
+            value = BASE_PATH + "/services/{id}",
+            method = RequestMethod.DELETE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseBody
+    public ResponseEntity<StateAndLinks<ServiceState>> getUnconsumedServiceById(
+            @PathVariable("id") String id) throws URISyntaxException {
+        UniqueIdentifier uid = new UniqueIdentifier(null, UUID.fromString(id));
+        try {
+            final SignedTransaction signedTx = proxy
+                    .startTrackedFlowDynamic(ServiceFlow.Delete.class, uid)
+                    .getReturnValue()
+                    .get();
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null);
+
+        } catch (Throwable ex) {
+            logger.error(ex.getMessage(), ex);
+            return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED)
+                    .body(new StateAndLinks<ServiceState>().error(ex));
+        }
+
+    }
+
 
     @MessageMapping(value = BASE_PATH + "/services")
     @SendTo("/topic/sidis/eas/services")
