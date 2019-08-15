@@ -165,8 +165,8 @@ public class Controller {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     @ResponseBody
-    public ResponseEntity<StateAndLinks<ServiceState>> getUnconsumedServiceById(
-            @PathVariable("id") String id) throws URISyntaxException {
+    public ResponseEntity<StateAndLinks<ServiceState>> deleteServiceById(
+            @PathVariable("id") String id) {
         UniqueIdentifier uid = new UniqueIdentifier(null, UUID.fromString(id));
         try {
             final SignedTransaction signedTx = proxy

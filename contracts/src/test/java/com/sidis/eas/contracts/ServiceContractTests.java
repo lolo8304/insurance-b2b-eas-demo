@@ -173,12 +173,12 @@ public class ServiceContractTests extends SidisBaseTests {
     public void service_update_normal_WITHDRAWN_invalid_state() {
         transaction(ledgerServices, tx -> {
             ServiceState service1 = newService();
-            ServiceState service1a = setInvalidState(service1, ServiceState.State.WITHDRAWN);
-            ServiceState service2 = setInvalidState(updateService(service1), ServiceState.State.WITHDRAWN);
+            ServiceState service1a = setInvalidState(service1, ServiceState.State.NOT_SHARED);
+            ServiceState service2 = setInvalidState(updateService(service1), ServiceState.State.NOT_SHARED);
             tx.input(ServiceContract.ID, service1a);
             tx.output(ServiceContract.ID, service2);
             tx.command(service2.getParticipantKeys(), new ServiceContract.Commands.Update());
-            tx.failsWith("state <WITHDRAWN> is final state and cannot be transitioned");
+            tx.failsWith("state <NOT_SHARED> is final state and cannot be transitioned");
             return null;
         });
 
@@ -358,19 +358,6 @@ public class ServiceContractTests extends SidisBaseTests {
     public void service_create_withdraw_updated() {
         transaction(ledgerServices, tx -> {
             ServiceState service1 = updateService(newService());
-            ServiceState service2 = withAction(service1, "WITHDRAW");
-            tx.input(ServiceContract.ID, service1);
-            tx.output(ServiceContract.ID, service2);
-            tx.command(service2.getParticipantKeys(), new ServiceContract.Commands.ActionBeforeShare("WITHDRAW"));
-            tx.verifies();
-            return null;
-        });
-    }
-
-    @Test
-    public void service_create_withdraw_updated_shared() {
-        transaction(ledgerServices, tx -> {
-            ServiceState service1 = shareService(updateService(newService()), insurer2Party);
             ServiceState service2 = withAction(service1, "WITHDRAW");
             tx.input(ServiceContract.ID, service1);
             tx.output(ServiceContract.ID, service2);

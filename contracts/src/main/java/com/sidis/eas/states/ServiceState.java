@@ -119,11 +119,11 @@ public class ServiceState implements LinearState {
 
         UPDATE(null,      State.CREATED, State.SHARED),
 
-        NO_SHARE(State.NOT_SHARED,  State.CONFIRMED, State.INFORMED, State.REGISTERED, State.CREATED),
-        DUPLICATE(State.DUPLICATE, State.CONFIRMED, State.INFORMED, State.REGISTERED, State.CREATED),
+        WITHDRAW(State.WITHDRAWN,   State.CONFIRMED, State.INFORMED, State.REGISTERED, State.CREATED),
+        NO_SHARE(State.NOT_SHARED,  State.CONFIRMED, State.INFORMED),
+        DUPLICATE(State.DUPLICATE,  State.CONFIRMED, State.INFORMED, State.REGISTERED, State.CREATED),
         SHARE(State.SHARED,         State.CONFIRMED, State.INFORMED, State.REGISTERED, State.CREATED),
 
-        WITHDRAW(State.WITHDRAWN,   State.CREATED, State.REGISTERED, State.INFORMED, State.CONFIRMED, State.SHARED),
 
         SEND_PAYMENT(State.PAYMENT_SENT, State.SHARED),
 
