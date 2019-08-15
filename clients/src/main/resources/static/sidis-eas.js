@@ -44,10 +44,10 @@ function forceRefreshGrids() {
 }
 
 function animationOff() {
-    $( "#runningAnimation" ).hide();
+    setWebSocketConnected(true, false);
 }
 function animationOn() {
-    $( "#runningAnimation" ).show();
+    setWebSocketConnected(true, true);
 }
 
 
@@ -247,7 +247,7 @@ function get_me() {
             var C=x500name[2].split("=")[1];
             var imageName = O.trim().replace(/[ ]/g, '_').replace(/[,\.]/g, '').toLowerCase();
             $( "#party_me" ).html( O+", "+L+" ("+C+")" );
-            $( "#image_me" ).html( "<img style=\"width:80px\" src=\""+imageName+".jpeg\"/>" );
+            $( "#image_me" ).html( "<img style=\"width:80px\" src=\"images/node_"+imageName+".jpeg\"/>" );
             ME = O;
         }
     }).fail(function(e) {
@@ -275,11 +275,13 @@ function get_services() {
     });
 }
 
-function setWebSocketConnected(connected) {
-     if (connected) {
-        $("#image-socket").html("<img src='green.png'>")
+function setWebSocketConnected(connected, running) {
+     if (connected && running) {
+        $("#image-socket").html("<img id='image-socket-ball' src='images/green.gif'>")
+     } else if (connected) {
+        $("#image-socket").html("<img id='image-socket-ball' src='images/green.png'>")
      } else {
-        $("#image-socket").html("<img src='red.png'>")
+        $("#image-socket").html("<img id='image-socket-ball' src='images/red.png'>")
      }
 }
 
@@ -288,7 +290,7 @@ function connectWebSocket() {
     var socket = new SockJS('/gs-guide-websocket');
     stompClient = Stomp.over(socket);
     stompClient.connect({}, function (frame) {
-        setWebSocketConnected(true);
+        setWebSocketConnected(true, false);
         console.log('Connected: ' + frame);
         stompClient.subscribe('/topic/sidis/eas/vaultChanged', function (changes) {
             get_services();
