@@ -84,7 +84,8 @@ function deleteService(service) {
                 data: ""
             }
         ).done(function(result) {
-
+            get_services();
+            animationOff();
         }).fail(function(jqXHR, textStatus) {
             alert(jqXHR.responseText);
             forceRefreshGrids();
@@ -318,6 +319,7 @@ function findAPI(url) {
     while ((m = regex.exec(url)) !== null) {
         // This is necessary to avoid infinite loops with zero-width matches
         if (m.index === regex.lastIndex) {
+            regex.lastIndex++;
             regex.lastIndex++;
         }
 
