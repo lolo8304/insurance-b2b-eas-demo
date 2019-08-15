@@ -142,6 +142,66 @@ public class ServiceFlow {
 
     }
 
+    @InitiatingFlow(version = 2)
+    @StartableByRPC
+    public static class Delete extends BaseFlow {
+        private final UniqueIdentifier id;
+
+        public Delete(UniqueIdentifier id) {
+            this.id = id;
+        }
+
+        @Override
+        public ProgressTracker getProgressTracker() {
+            return this.progressTracker_nosync;
+        }
+
+
+        @Suspendable
+        @Override
+        public SignedTransaction call() throws FlowException {
+            getProgressTracker().setCurrentStep(PREPARATION);
+            // We get a reference to our own identity.
+            Party me = getOurIdentity();
+
+            /* ============================================================================
+             *         TODO 1 - Create our object !
+             * ===========================================================================*/
+
+            StateAndRef<ServiceState> serviceRef = new FlowHelper<ServiceState>(this.getServiceHub()).getLastStateByLinearId(ServiceState.class, this.id);
+            if (serviceRef == null) {
+                throw new FlowException("service with id "+this.id+" not found");
+            }
+            ServiceState service = this.getStateByRef(serviceRef);
+
+            /* ============================================================================
+             *      TODO 3 - Build our issuance transaction to update the ledger!
+             * ===========================================================================*/
+            // We build our transaction.
+            getProgressTracker().setCurrentStep(BUILDING);
+            TransactionBuilder transactionBuilder = getTransactionBuilderSignedByParticipants(
+                    service,
+                    new ServiceContract.Commands.Delete());
+            transactionBuilder.addInputState(serviceRef);
+
+            /* ============================================================================
+             *          TODO 2 - Write our contract to control issuance!
+             * ===========================================================================*/
+            // We check our transaction is valid based on its contracts.
+            if (service.getState().isLaterState(ServiceState.State.SHARED)) {
+                // We check our transaction is valid based on its contracts.
+                if (service.getServiceProvider() == null) {
+                    return signAndFinalize(transactionBuilder);
+                } else {
+                    return signSyncCollectAndFinalize(service.getCounterParties(me), transactionBuilder);
+                }
+            } else if (!service.getState().equals(ServiceState.State.SHARED)) {
+                return signAndFinalize(transactionBuilder);
+            }
+            return signSyncCollectAndFinalize(service.getCounterParties(me), transactionBuilder);
+        }
+
+    }
 
 
     @InitiatingFlow(version = 2)
@@ -316,6 +376,20 @@ public class ServiceFlow {
         }
     }
 
+
+    @InitiatedBy(ServiceFlow.Delete.class)
+    public static class DeleteResponder extends ResponderBaseFlow<ServiceState> {
+
+        public DeleteResponder(FlowSession otherFlow) {
+            super(otherFlow);
+        }
+
+        @Suspendable
+        @Override
+        public Unit call() throws FlowException {
+            return this.receiveIdentitiesCounterpartiesNoTxChecking();
+        }
+    }
     @InitiatedBy(ServiceFlow.Share.class)
     public static class ShareResponder extends ResponderBaseFlow<ServiceState> {
 

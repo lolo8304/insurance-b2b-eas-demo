@@ -51,7 +51,7 @@ function animationOn() {
 }
 
 
-function saveDummyService(self, service, spShort, price, optionalIds){
+function createNewService(self, service, spShort, price, optionalIds){
     animationOn();
     $.ajax(
         {
@@ -68,6 +68,28 @@ function saveDummyService(self, service, spShort, price, optionalIds){
         alert(jqXHR.responseText);
         forceRefreshGrids();
     });
+}
+
+function deleteService(service) {
+    var id = $(service).attr("value");
+    if (confirm('Are you sure to delete service ' + id +'?')) {
+        animationOn();
+        $.ajax(
+            {
+                url: MAIN_URL+"/api/v1/sidis/eas/services/"+id,
+                method: "DELETE",
+                headers: {
+                    "Content-Type" : "application/x-www-form-urlencoded"
+                },
+                data: ""
+            }
+        ).done(function(result) {
+
+        }).fail(function(jqXHR, textStatus) {
+            alert(jqXHR.responseText);
+            forceRefreshGrids();
+        });
+    }
 }
 
 
@@ -177,7 +199,8 @@ function show_services(tagName, result) {
                 }
             },
             { title: "Link", name: "state.id", type: "text", align: "center", width: 30, itemTemplate: function(value) {
-                 var res = "<a target='_blank' href='"+MAIN_URL+"/api/v1/sidis/eas/services/"+value.id+"'>o</a>";
+                 var res = "<a target='_blank' href='"+MAIN_URL+"/api/v1/sidis/eas/services/"+value.id+"'>o</a>&nbsp;"
+                    +"<a value="+value.id+" href=\"#\" onClick=\"deleteService(this)\"'>X</a>";
                  i = i + 10;
                 return strongS(i)+res+strongE(i); }
             }

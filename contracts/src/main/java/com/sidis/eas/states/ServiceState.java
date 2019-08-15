@@ -257,9 +257,15 @@ public class ServiceState implements LinearState {
         return serviceData;
     }
     public Set<Party> getCounterParties(Party me) {
-        if (this.getInitiator().equals(me)) return Sets.newHashSet(this.serviceProvider);
-        if (this.getServiceProvider().equals(me)) return Sets.newHashSet(this.initiator);
-        throw new IllegalStateException("The passed party <"+me+"> is no counterparty");
+        if (me != null) {
+            if (this.getServiceProvider() != null) {
+                if (this.getInitiator().equals(me)) return Sets.newHashSet(this.serviceProvider);
+                if (this.getServiceProvider().equals(me)) return Sets.newHashSet(this.initiator);
+            } else {
+                if (this.getInitiator().equals(me)) return Collections.EMPTY_SET;
+            }
+        }
+        return Collections.EMPTY_SET;
     }
 
 

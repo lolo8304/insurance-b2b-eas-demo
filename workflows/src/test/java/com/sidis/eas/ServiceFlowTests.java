@@ -69,6 +69,23 @@ public class ServiceFlowTests extends SidisBaseFlowTests {
     }
 
 
+    @Test
+    public void delete_before_share_service() throws Exception {
+        SignedTransaction tx = this.newServiceCreateFlow("Exit", dataJSONString(), 7);
+        StateVerifier verifier = StateVerifier.fromTransaction(tx, this.ledgerServices);
+        ServiceState service = verifier
+                .output().one()
+                .one(ServiceState.class)
+                .object();
+        Assert.assertEquals("ZVP must be false", "false", service.getData("coverages.ZVP"));
+
+        StateVerifier verifier2 = StateVerifier.fromTransaction(
+                this.newServiceDeleteFlow(service.getId()),
+                this.ledgerServices);
+        verifier2.output().empty();
+    }
+
+
 
     @Test
     public void share_service() throws Exception {

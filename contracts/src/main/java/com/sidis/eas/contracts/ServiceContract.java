@@ -86,6 +86,18 @@ public class ServiceContract implements Contract {
                 });
             }
         }
+        class Delete extends Common implements ServiceContract.Commands {
+            @Override
+            public void verify(LedgerTransaction tx, StateVerifier verifier) throws IllegalArgumentException {
+                requireThat(req -> {
+                    ServiceState service = verifier
+                            .input().one().one(ServiceState.class)
+                            .object();
+                    verifier.output().empty("output must be empty");
+                    return null;
+                });
+            }
+        }
         class Share extends Common implements ServiceContract.Commands {
             @Override
             public void verify(LedgerTransaction tx, StateVerifier verifier) throws IllegalArgumentException {
