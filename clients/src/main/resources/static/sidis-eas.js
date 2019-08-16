@@ -28,10 +28,6 @@ if (port != null) {
 var toRefresh = false;
 function refreshGrids() {
     if (toRefresh) {
-        var grids = [ "#brokerMandatesTemplate", "#insuranceMandatesTemplate", "#offers", "#offeringTemplates"];
-        for (grid in grids) {
-            $(grids[grid]).jsGrid("reset");
-        }
         $( "#runningAnimation" ).hide();
         history.go(0)
     } else {
@@ -93,15 +89,9 @@ function deleteService(service) {
     }
 }
 
-
-
-function getPatientDemo() {
-    return "{\"person\":{\"firstName\":\"John\",\"lastName\":\"Doe\",\"dateOfBirth\":\"1993-09-13\",\"sex\":\"male\"},\"address\":{\"street\":\"NE 29th Place\",\"city\":\"Bellevue\",\"zip\":\"14615\",\"state\":\"WA\",\"country\":\"USA\"},\"communication\":{\"email\":\"john.doe@random.com\",\"phone\":\"(541) 754-3010\",\"mobile\":\"1-541-754-3010\"},\"body-vitals\":{\"bloodType\":\"A+\",\"weight\":\"238 lb\",\"height\":\"6ft 2in\",\"bmi\":\"31.3\",\"bodyFat\":\"0.218\",\"muscleMass\":\"0.25\",\"hipSize\":\"33in\",\"bodyTemperature\":[98],\"heartRate\":[80],\"bloodPressure\":[130],\"respiratoryRate\":[27],\"sleepingBehaviour\":{},\"pedometer/Day\":[6000]},\"nutrition\":{\"foodAllergies\":[\"egg\",\"nuts\"],\"caloriesPerDay\":[2700],\"diets\":[],\"macroPerDay\":[700],\"microPerDay\":[200]},\"allergies\":{\"types\":[\"hayfever\",\"alergic asthma\"]},\"genetics\":{\"investigations\":[\"geneticTest200610\",\"geneticTest151015\"]},\"medical-history\":{},\"medication\":[{\"drugName\":\"Aspirin\",\"isTakenPeriodically\":true}],\"ongoingConditions\":[\"Diabetes\"],\"immunizations\":{\"types\":[\"measles\",\"smallpox\"]},\"wallet\":{\"ethereum\":\"0x049A17DE00c70e7dBfE5A71b8B529D89ce1365Fa\",\"token\":\"d\",\"token-updated-by\":\"Initial\"}}";
-}
 function getServiceData() {
     return "{\"test\": \"42\"}";
 }
-
 
 function strongS(i) {
     return (i < 10 ? "<strong>" : "");

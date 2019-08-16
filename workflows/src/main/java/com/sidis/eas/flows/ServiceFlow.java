@@ -1,8 +1,8 @@
 package com.sidis.eas.flows;
 
+import ch.cordalo.corda.common.JsonHelper;
 import co.paralleluniverse.fibers.Suspendable;
 import com.sidis.eas.contracts.ServiceContract;
-import com.sidis.eas.states.JsonHelper;
 import com.sidis.eas.states.ServiceState;
 import kotlin.Unit;
 import net.corda.core.contracts.StateAndRef;

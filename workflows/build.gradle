@@ -47,9 +47,14 @@ dependencies {
     cordaCompile "$corda_release_group:corda-confidential-identities:$corda_release_version"
 
     testCompile "$corda_release_group:corda-node-driver:$corda_release_version"
+    testCompile project(":contracts").sourceSets.test.output
+
+    //cordaCompile project(":corda-common")
+    testCompile project(":corda-common-test")
 
     // CorDapp dependencies.
     cordapp project(":contracts")
+
 }
 
 task integrationTest(type: Test, dependsOn: []) {

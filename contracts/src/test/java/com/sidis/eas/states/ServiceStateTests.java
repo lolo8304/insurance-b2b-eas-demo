@@ -1,17 +1,21 @@
 package com.sidis.eas.states;
 
+import ch.cordalo.corda.common.JsonHelper;
 import com.sidis.eas.SidisBaseTests;
 import net.corda.core.contracts.UniqueIdentifier;
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 public class ServiceStateTests extends SidisBaseTests {
-    @Override
+
+    @Before
     public void setup() {
         this.setup(false);
     }
 
-    @Override
+    @After
     public void tearDown() {
         super.tearDown();
     }
@@ -33,7 +37,7 @@ public class ServiceStateTests extends SidisBaseTests {
         ServiceState service = ServiceState.create(
                 new UniqueIdentifier(),
                 "insurance",
-                this.insurer1Party,
+                this.insurance1.party,
                 JsonHelper.convertStringToJson(dataJSONString()));
         Assert.assertEquals("state must be CREATED",
                 ServiceState.State.CREATED, service.getState());
@@ -43,7 +47,7 @@ public class ServiceStateTests extends SidisBaseTests {
         ServiceState service = ServiceState.create(
                 new UniqueIdentifier(),
                 "insurance",
-                this.insurer1Party,
+                this.insurance1.party,
                 JsonHelper.convertStringToJson(dataJSONString()));
         ServiceState serviceUpdated = service.update(JsonHelper.convertStringToJson(dataUpdateJSONString()));
         Assert.assertEquals("state must be still CREATED",

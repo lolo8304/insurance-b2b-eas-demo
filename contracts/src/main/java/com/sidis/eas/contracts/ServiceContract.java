@@ -1,7 +1,8 @@
 package com.sidis.eas.contracts;
 
+import ch.cordalo.corda.common.StateVerifier;
+import ch.cordalo.corda.common.contracts.ReferenceContract;
 import com.sidis.eas.states.ServiceState;
-import com.sidis.eas.states.StateVerifier;
 import kotlin.Pair;
 import net.corda.core.contracts.CommandData;
 import net.corda.core.contracts.Contract;

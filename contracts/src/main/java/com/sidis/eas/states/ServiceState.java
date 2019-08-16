@@ -1,5 +1,6 @@
 package com.sidis.eas.states;
 
+import ch.cordalo.corda.common.JsonHelper;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.Sets;
 import com.sidis.eas.contracts.ServiceContract;
@@ -10,7 +11,6 @@ import net.corda.core.identity.AbstractParty;
 import net.corda.core.identity.Party;
 import net.corda.core.serialization.ConstructorForDeserialization;
 import net.corda.core.serialization.CordaSerializable;
-import org.apache.commons.collections.list.UnmodifiableList;
 import org.jetbrains.annotations.NotNull;
 
 import java.security.PublicKey;
