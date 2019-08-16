@@ -21,7 +21,8 @@ dependencies {
     testCompile "$corda_release_group:corda-node-driver:$corda_release_version"
     testCompile "junit:junit:$junit_version"
 
-    cordaCompile project(":corda-common")
+    cordapp project(":corda-common")
+
     testCompile project(":corda-common-test")
 
 }
