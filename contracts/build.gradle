@@ -23,6 +23,7 @@ dependencies {
     testCompile "junit:junit:$junit_version"
     testCompile "ch.cordalo:corda-common-test:$cordalo_version"
 
-    cordapp "ch.cordalo:corda-common-contracts:$cordalo_version"
+    cordaRuntime "ch.cordalo:corda-common-contracts:$cordalo_version"
+    cordaCompile "ch.cordalo:corda-common-contracts:$cordalo_version"
 
 }
