@@ -1,6 +1,9 @@
 package com.sidis.eas.flows;
 
 import ch.cordalo.corda.common.contracts.JsonHelper;
+import ch.cordalo.corda.common.flows.BaseFlow;
+import ch.cordalo.corda.common.flows.FlowHelper;
+import ch.cordalo.corda.common.flows.ResponderBaseFlow;
 import co.paralleluniverse.fibers.Suspendable;
 import com.sidis.eas.contracts.ServiceContract;
 import com.sidis.eas.states.ServiceState;

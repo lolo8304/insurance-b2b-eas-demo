@@ -2,6 +2,7 @@ package com.sidis.eas.states;
 
 import ch.cordalo.corda.common.contracts.JsonHelper;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.sidis.eas.contracts.ServiceContract;
 import net.corda.core.contracts.BelongsToContract;
@@ -256,16 +257,16 @@ public class ServiceState implements LinearState {
     public Map<String, Object> getServiceData() {
         return serviceData;
     }
-    public Set<Party> getCounterParties(Party me) {
+    public List<AbstractParty> getCounterParties(Party me) {
         if (me != null) {
             if (this.getServiceProvider() != null) {
-                if (this.getInitiator().equals(me)) return Sets.newHashSet(this.serviceProvider);
-                if (this.getServiceProvider().equals(me)) return Sets.newHashSet(this.initiator);
+                if (this.getInitiator().equals(me)) return Arrays.asList(this.serviceProvider);
+                if (this.getServiceProvider().equals(me)) return Arrays.asList(this.initiator);
             } else {
-                if (this.getInitiator().equals(me)) return Collections.EMPTY_SET;
+                if (this.getInitiator().equals(me)) return Collections.EMPTY_LIST;
             }
         }
-        return Collections.EMPTY_SET;
+        return Collections.EMPTY_LIST;
     }
 
 
