@@ -20,18 +20,10 @@ public abstract class SidisBaseTests extends CordaloBaseTests {
     protected CordaNodeEnvironment fzl1;
     protected CordaNodeEnvironment fzl2;
 
-    public List<TestCordapp> getTestCordapps() {
-        return ImmutableList.of(
-                TestCordapp.findCordapp("com.sidis.eas.contracts")
-                //,
-                // TestCordapp.findCordapp("ch.cordalo.common")
-        );
-    }
     public List<String> getCordappPackageNames() {
         return ImmutableList.of(
-                "com.sidis.eas.contracts"
-                //,
-                // "ch.cordalo.common"
+                "com.sidis.eas.contracts",
+                "ch.cordalo.corda.common.contracts"
         );
     }
 
@@ -39,7 +31,6 @@ public abstract class SidisBaseTests extends CordaloBaseTests {
     public void setup(boolean withNodes, Class<? extends FlowLogic> ...responderClasses) {
         this.network = new CordaTestNetwork(
                 withNodes,
-            this.getTestCordapps(),
             this.getCordappPackageNames(),
             responderClasses
         );
