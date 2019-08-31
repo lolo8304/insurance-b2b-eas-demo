@@ -1,6 +1,6 @@
 package com.sidis.eas;
 
-import ch.cordalo.corda.common.StateVerifier;
+import ch.cordalo.corda.common.contracts.StateVerifier;
 import com.sidis.eas.flows.ServiceFlow;
 import com.sidis.eas.states.ServiceState;
 import net.corda.core.transactions.SignedTransaction;

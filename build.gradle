@@ -10,6 +10,7 @@ buildscript {
         slf4j_version = '1.7.25'
         log4j_version = '2.11.2'
         corda_platform_version = '4'
+        cordalo_version='0.1-SNAPSHOT'
     }
 
     repositories {
@@ -17,6 +18,7 @@ buildscript {
         mavenCentral()
         jcenter()
         maven { url 'https://ci-artifactory.corda.r3cev.com/artifactory/corda' }
+        maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
     }
 
     dependencies {
@@ -30,12 +32,17 @@ buildscript {
 allprojects {
     apply plugin: 'java'
 
+    configurations.all {
+        resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+    }
+
     repositories {
         mavenLocal()
         jcenter()
         mavenCentral()
         maven { url 'https://ci-artifactory.corda.r3cev.com/artifactory/corda' }
         maven { url 'https://jitpack.io' }
+        maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
     }
 
     tasks.withType(JavaCompile) {

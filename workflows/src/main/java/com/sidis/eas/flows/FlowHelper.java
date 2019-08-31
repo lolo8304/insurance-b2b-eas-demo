@@ -32,10 +32,31 @@ public class FlowHelper<T extends ContractState> {
     }
 
     @Suspendable
+    public List<StateAndRef<T>> getAllStatesByLinearId(Class<T> stateClass, UniqueIdentifier linearId) {
+        QueryCriteria queryCriteria = new QueryCriteria.LinearStateQueryCriteria(
+                null,
+                ImmutableList.of(linearId),
+                Vault.StateStatus.ALL,
+                null);
+        return this.serviceHub.getVaultService().queryBy(stateClass, queryCriteria).getStates();
+    }
+
+    @Suspendable
     public StateAndRef<T> getLastState(Class<T> stateClass) {
         QueryCriteria queryCriteria = new QueryCriteria.VaultQueryCriteria(Vault.StateStatus.UNCONSUMED);
         List<StateAndRef<T>> data = this.serviceHub.getVaultService().queryBy(stateClass, queryCriteria).getStates();
         return data != null && data.size() > 0 ? data.get(data.size()-1) : null;
+    }
+
+    @Suspendable
+    public List<StateAndRef<T>> getUnconsumed(Class<T> stateClass) {
+        QueryCriteria queryCriteria = new QueryCriteria.VaultQueryCriteria(Vault.StateStatus.UNCONSUMED);
+        return this.serviceHub.getVaultService().queryBy(stateClass, queryCriteria).getStates();
+    }
+    @Suspendable
+    public List<StateAndRef<T>> getConsumed(Class<T> stateClass) {
+        QueryCriteria queryCriteria = new QueryCriteria.VaultQueryCriteria(Vault.StateStatus.CONSUMED);
+        return this.serviceHub.getVaultService().queryBy(stateClass, queryCriteria).getStates();
     }
 
 }

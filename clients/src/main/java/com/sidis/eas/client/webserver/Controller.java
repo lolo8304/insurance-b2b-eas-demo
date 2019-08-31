@@ -1,9 +1,9 @@
 package com.sidis.eas.client.webserver;
 
+import ch.cordalo.corda.common.contracts.JsonHelper;
+import ch.cordalo.corda.common.contracts.StateVerifier;
 import com.sidis.eas.flows.ServiceFlow;
-import ch.cordalo.corda.common.JsonHelper;
 import com.sidis.eas.states.ServiceState;
-import ch.cordalo.corda.common.StateVerifier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import net.corda.core.contracts.UniqueIdentifier;
@@ -226,7 +226,7 @@ public class Controller {
      * create a new service with given data
      * @param request is the original http request to calculate links in response
      * @param data string contains json data for the service
-     * @param service-name is the name of the service
+     * @param serviceName is the name of the service
      * @param price is a possible positiv price for the service
      */
     @RequestMapping(

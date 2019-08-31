@@ -1,6 +1,6 @@
 package com.sidis.eas.states;
 
-import ch.cordalo.corda.common.JsonHelper;
+import ch.cordalo.corda.common.contracts.JsonHelper;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.Sets;
 import com.sidis.eas.contracts.ServiceContract;
