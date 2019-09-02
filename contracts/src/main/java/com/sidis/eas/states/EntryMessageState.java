@@ -1,5 +1,6 @@
 package com.sidis.eas.states;
 
+import com.sidis.eas.contracts.StateMachine;
 import net.corda.core.contracts.UniqueIdentifier;
 import net.corda.core.identity.Party;
 import net.corda.core.serialization.ConstructorForDeserialization;
@@ -13,13 +14,13 @@ public class EntryMessageState extends ServiceState {
     private String insuredPerson;
 
     @ConstructorForDeserialization
-    public EntryMessageState(@NotNull UniqueIdentifier id, @NotNull String serviceName, @NotNull Party initiator, @NotNull State state, String insuredCompany, String insuredPerson, Map<String, Object> serviceData, Party serviceProvider, Integer price) {
+    public EntryMessageState(@NotNull UniqueIdentifier id, @NotNull String serviceName, @NotNull Party initiator, @NotNull StateMachine.State state, String insuredCompany, String insuredPerson, Map<String, Object> serviceData, Party serviceProvider, Integer price) {
         super(id, serviceName, initiator, state, serviceData, serviceProvider, price);
         this.insuredCompany = insuredCompany;
         this.insuredPerson = insuredPerson;
     }
 
-    public EntryMessageState(@NotNull UniqueIdentifier id, @NotNull String serviceName, @NotNull Party initiator, @NotNull State state, Map<String, Object> serviceData, Party serviceProvider, Integer price) {
+    public EntryMessageState(@NotNull UniqueIdentifier id, @NotNull String serviceName, @NotNull Party initiator, @NotNull StateMachine.State state, Map<String, Object> serviceData, Party serviceProvider, Integer price) {
         super(id, serviceName, initiator, state, serviceData, serviceProvider, price);
         this.insuredCompany = null;
         this.insuredPerson = null;

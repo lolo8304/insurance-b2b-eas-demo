@@ -1,5 +1,6 @@
 package com.sidis.eas.contracts;
 
+import ch.cordalo.corda.common.contracts.CommandVerifier;
 import ch.cordalo.corda.common.contracts.ReferenceContract;
 import ch.cordalo.corda.common.contracts.StateVerifier;
 import com.sidis.eas.states.ServiceState;
@@ -29,7 +30,16 @@ public class ServiceContract implements Contract {
 
             public Pair<ServiceState, ServiceState> verify1InOut(LedgerTransaction tx, StateVerifier verifier) throws IllegalArgumentException {
                 return requireThat(req -> {
-                    ServiceState service1 = verifier.input().one().one(ServiceState.class).object();
+
+                    CommandVerifier.Parameters<ServiceState> params = new CommandVerifier.Parameters<>();
+                    params.notEmpty(
+                            ServiceState::getId, ServiceState::getState,
+                            ServiceState::getInitiator, ServiceState::getServiceName);
+                    params.equal(ServiceState::getId, ServiceState::getInitiator);
+                    new CommandVerifier(verifier).verify_update1(ServiceState.class, params);
+
+
+                    ServiceState service1 = verifier.input().notEmpty().one().one(ServiceState.class).object();
                     ServiceState service2 = verifier
                             .output().notEmpty().one(ServiceState.class)
                             .object();
@@ -49,12 +59,12 @@ public class ServiceContract implements Contract {
                 requireThat(req -> {
                     verifier.input().empty("input must be empty");
                     ServiceState service = verifier
-                            .output().one().one(ServiceState.class)
+                            .output()
+                            .one().one(ServiceState.class)
+                            .isEmpty(ServiceState::getServiceProvider, "service provider must be empty on creation")
                             .object();
-                    req.using("service provider must be empty on creation",
-                            service.getServiceProvider() == null);
                     req.using("state must be an initial state",
-                            ServiceState.StateTransition.CREATE
+                            StateMachine.StateTransition.CREATE
                               .getInitialState()
                                   .equals(service.getState()));
                     return null;
@@ -71,7 +81,7 @@ public class ServiceContract implements Contract {
                     req.using("state must be the same",
                             service1.getState().equals(service2.getState()));
                     req.using("state <"+service2.getState()+"> is not valid next state from <"+service1.getState()+">",
-                        ServiceState.StateTransition.UPDATE
+                        StateMachine.StateTransition.UPDATE
                                 .getNextStateFrom(service1.getState())
                                     .equals(service2.getState()));
                     if (service1.getServiceProvider() == null) {
@@ -109,7 +119,7 @@ public class ServiceContract implements Contract {
                     req.using("state must be different",
                             !service1.getState().equals(service2.getState()));
                     req.using("state <"+service2.getState()+"> is not valid next state from <"+service1.getState()+">",
-                            ServiceState.StateTransition.SHARE
+                            StateMachine.StateTransition.SHARE
                                     .getNextStateFrom(service1.getState())
                                     .equals(service2.getState()));
                     if (service1.getServiceProvider() != null) {
@@ -126,15 +136,15 @@ public class ServiceContract implements Contract {
         }
 
         class AnyAction extends Common implements ServiceContract.Commands {
-            private final ServiceState.StateTransition transition;
+            private final StateMachine.StateTransition transition;
             public AnyAction(String transition) {
-                this.transition = ServiceState.StateTransition.valueOf(transition);
+                this.transition = StateMachine.StateTransition.valueOf(transition);
             }
             @ConstructorForDeserialization
-            public AnyAction(ServiceState.StateTransition transition) {
+            public AnyAction(StateMachine.StateTransition transition) {
                 this.transition = transition;
             }
-            public ServiceState.StateTransition getTransition() {
+            public StateMachine.StateTransition getTransition() {
                 return this.transition;
             }
 
@@ -159,7 +169,7 @@ public class ServiceContract implements Contract {
                 super(transition);
             }
             @ConstructorForDeserialization
-            public ActionBeforeShare(ServiceState.StateTransition transition) {
+            public ActionBeforeShare(StateMachine.StateTransition transition) {
                 super(transition);
             }
 
@@ -189,7 +199,7 @@ public class ServiceContract implements Contract {
                 super(transition);
             }
             @ConstructorForDeserialization
-            public ActionAfterShare(ServiceState.StateTransition transition) {
+            public ActionAfterShare(StateMachine.StateTransition transition) {
                 super(transition);
             }
 

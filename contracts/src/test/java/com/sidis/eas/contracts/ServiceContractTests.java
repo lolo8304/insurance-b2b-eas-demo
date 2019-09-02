@@ -31,18 +31,18 @@ public class ServiceContractTests extends SidisBaseTests {
         return service.share(serviceProvider);
     }
 
-    private ServiceState withAction(ServiceState service, ServiceState.StateTransition transition) {
+    private ServiceState withAction(ServiceState service, StateMachine.StateTransition transition) {
         return service.withAction(transition);
     }
     private ServiceState withAction(ServiceState service, String transition) {
-        return service.withAction(ServiceState.StateTransition.valueOf(transition));
+        return service.withAction(StateMachine.StateTransition.valueOf(transition));
     }
 
     private ServiceState updateAfterShareService(ServiceState service) {
         return service.update(JsonHelper.convertStringToJson(ServiceStateTests.dataUpdateAfterShareJSONString()));
     }
 
-    private ServiceState setInvalidState(ServiceState serviceState, ServiceState.State newState) {
+    private ServiceState setInvalidState(ServiceState serviceState, StateMachine.State newState) {
         return new ServiceState(
                 serviceState.getId(),
                 serviceState.getServiceName(),
@@ -52,7 +52,7 @@ public class ServiceContractTests extends SidisBaseTests {
                 serviceState.getServiceProvider(),
                 serviceState.getPrice());
     }
-    private ServiceState setInvalidStateProvider(ServiceState serviceState, ServiceState.State newState, Party newProvider) {
+    private ServiceState setInvalidStateProvider(ServiceState serviceState, StateMachine.State newState, Party newProvider) {
         return new ServiceState(
                 serviceState.getId(),
                 serviceState.getServiceName(),
@@ -68,7 +68,7 @@ public class ServiceContractTests extends SidisBaseTests {
     public void service_create_normal_no_initial_state() {
         transaction(insurance1.ledgerServices, tx -> {
             ServiceState service1 = newService();
-            ServiceState service2 = setInvalidState(service1, ServiceState.State.SHARED);
+            ServiceState service2 = setInvalidState(service1, StateMachine.State.SHARED);
             tx.output(ServiceContract.ID, service2);
             tx.command(service2.getParticipantKeys(), new ServiceContract.Commands.Create());
             tx.failsWith("state must be an initial state");
@@ -158,8 +158,8 @@ public class ServiceContractTests extends SidisBaseTests {
     public void service_update_normal_ACCEPTED_invalid_state() {
         transaction(insurance1.ledgerServices, tx -> {
             ServiceState service1 = newService();
-            ServiceState service1a = setInvalidState(service1, ServiceState.State.ACCEPTED);
-            ServiceState service2 = setInvalidState(updateService(service1), ServiceState.State.ACCEPTED);
+            ServiceState service1a = setInvalidState(service1, StateMachine.State.ACCEPTED);
+            ServiceState service2 = setInvalidState(updateService(service1), StateMachine.State.ACCEPTED);
             tx.input(ServiceContract.ID, service1a);
             tx.output(ServiceContract.ID, service2);
             tx.command(service2.getParticipantKeys(), new ServiceContract.Commands.Update());
@@ -173,8 +173,8 @@ public class ServiceContractTests extends SidisBaseTests {
     public void service_update_normal_WITHDRAWN_invalid_state() {
         transaction(insurance1.ledgerServices, tx -> {
             ServiceState service1 = newService();
-            ServiceState service1a = setInvalidState(service1, ServiceState.State.NOT_SHARED);
-            ServiceState service2 = setInvalidState(updateService(service1), ServiceState.State.NOT_SHARED);
+            ServiceState service1a = setInvalidState(service1, StateMachine.State.NOT_SHARED);
+            ServiceState service2 = setInvalidState(updateService(service1), StateMachine.State.NOT_SHARED);
             tx.input(ServiceContract.ID, service1a);
             tx.output(ServiceContract.ID, service2);
             tx.command(service2.getParticipantKeys(), new ServiceContract.Commands.Update());
@@ -188,8 +188,8 @@ public class ServiceContractTests extends SidisBaseTests {
     public void service_update_normal_DECLINED_invalid_state() {
         transaction(insurance1.ledgerServices, tx -> {
             ServiceState service1 = newService();
-            ServiceState service1a = setInvalidState(service1, ServiceState.State.DECLINED);
-            ServiceState service2 = setInvalidState(updateService(service1), ServiceState.State.DECLINED);
+            ServiceState service1a = setInvalidState(service1, StateMachine.State.DECLINED);
+            ServiceState service2 = setInvalidState(updateService(service1), StateMachine.State.DECLINED);
             tx.input(ServiceContract.ID, service1a);
             tx.output(ServiceContract.ID, service2);
             tx.command(service2.getParticipantKeys(), new ServiceContract.Commands.Update());
@@ -331,7 +331,7 @@ public class ServiceContractTests extends SidisBaseTests {
         transaction(insurance1.ledgerServices, tx -> {
             ServiceState service1 = newService();
             ServiceState service2 = withAction(service1, "WITHDRAW");
-            ServiceState service2a = setInvalidState(service2, ServiceState.State.ACCEPTED);
+            ServiceState service2a = setInvalidState(service2, StateMachine.State.ACCEPTED);
             tx.input(ServiceContract.ID, service1);
             tx.output(ServiceContract.ID, service2a);
             tx.command(service2a.getParticipantKeys(), new ServiceContract.Commands.ActionBeforeShare("WITHDRAW"));
@@ -431,7 +431,7 @@ public class ServiceContractTests extends SidisBaseTests {
     public void service_decline_invalid_state() {
         transaction(insurance1.ledgerServices, tx -> {
             ServiceState service1 = shareService(newService(), this.insurance2.party);
-            ServiceState service2 = setInvalidState(withAction(service1, "DECLINE"), ServiceState.State.ACCEPTED);
+            ServiceState service2 = setInvalidState(withAction(service1, "DECLINE"), StateMachine.State.ACCEPTED);
             tx.input(ServiceContract.ID, service1);
             tx.output(ServiceContract.ID, service2);
             tx.command(service2.getParticipantKeys(), new ServiceContract.Commands.ActionAfterShare("DECLINE"));
@@ -459,7 +459,7 @@ public class ServiceContractTests extends SidisBaseTests {
     public void service_decline_invalid_pre_state() {
         transaction(insurance1.ledgerServices, tx -> {
             ServiceState service1 = newService();
-            ServiceState service2 = setInvalidStateProvider(service1, ServiceState.State.DECLINED, this.insurance2.party);
+            ServiceState service2 = setInvalidStateProvider(service1, StateMachine.State.DECLINED, this.insurance2.party);
             tx.input(ServiceContract.ID, service1);
             tx.output(ServiceContract.ID, service2);
             tx.command(service2.getParticipantKeys(), new ServiceContract.Commands.ActionAfterShare("DECLINE"));
@@ -503,7 +503,7 @@ public class ServiceContractTests extends SidisBaseTests {
     public void service_accept_invalid_state() {
         transaction(insurance1.ledgerServices, tx -> {
             ServiceState service1 = shareService(newService(), this.insurance2.party);
-            ServiceState service2 = setInvalidState(withAction(service1, "ACCEPT"), ServiceState.State.DECLINED);
+            ServiceState service2 = setInvalidState(withAction(service1, "ACCEPT"), StateMachine.State.DECLINED);
             tx.input(ServiceContract.ID, service1);
             tx.output(ServiceContract.ID, service2);
             tx.command(service2.getParticipantKeys(), new ServiceContract.Commands.ActionAfterShare("ACCEPT"));
@@ -531,7 +531,7 @@ public class ServiceContractTests extends SidisBaseTests {
     public void service_accept_invalid_pre_state() {
         transaction(insurance1.ledgerServices, tx -> {
             ServiceState service1 = newService();
-            ServiceState service2 = setInvalidStateProvider(service1, ServiceState.State.ACCEPTED, this.insurance2.party);
+            ServiceState service2 = setInvalidStateProvider(service1, StateMachine.State.ACCEPTED, this.insurance2.party);
             tx.input(ServiceContract.ID, service1);
             tx.output(ServiceContract.ID, service2);
             tx.command(service2.getParticipantKeys(), new ServiceContract.Commands.ActionAfterShare("ACCEPT"));

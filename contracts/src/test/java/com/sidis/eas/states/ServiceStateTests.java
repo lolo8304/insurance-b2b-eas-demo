@@ -2,6 +2,7 @@ package com.sidis.eas.states;
 
 import ch.cordalo.corda.common.contracts.JsonHelper;
 import com.sidis.eas.SidisBaseTests;
+import com.sidis.eas.contracts.StateMachine;
 import net.corda.core.contracts.UniqueIdentifier;
 import org.junit.After;
 import org.junit.Assert;
@@ -40,7 +41,7 @@ public class ServiceStateTests extends SidisBaseTests {
                 this.insurance1.party,
                 JsonHelper.convertStringToJson(dataJSONString()));
         Assert.assertEquals("state must be CREATED",
-                ServiceState.State.CREATED, service.getState());
+                StateMachine.State.CREATED, service.getState());
     }
     @Test
     public void test_update_after_create() {
@@ -51,7 +52,7 @@ public class ServiceStateTests extends SidisBaseTests {
                 JsonHelper.convertStringToJson(dataJSONString()));
         ServiceState serviceUpdated = service.update(JsonHelper.convertStringToJson(dataUpdateJSONString()));
         Assert.assertEquals("state must be still CREATED",
-                ServiceState.State.CREATED, service.getState());
+                StateMachine.State.CREATED, service.getState());
         Assert.assertEquals("old ZVP value must be false",
                 "false", JsonHelper.getDataValue(service.getServiceData(), "coverages.ZVP"));
         Assert.assertEquals("old ZVP value must be true",

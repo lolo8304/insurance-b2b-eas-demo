@@ -2,6 +2,7 @@ package com.sidis.eas.client.webserver;
 
 import ch.cordalo.corda.common.contracts.JsonHelper;
 import ch.cordalo.corda.common.contracts.StateVerifier;
+import com.sidis.eas.contracts.StateMachine;
 import com.sidis.eas.flows.ServiceFlow;
 import com.sidis.eas.states.ServiceState;
 import com.google.common.collect.ImmutableList;
@@ -58,8 +59,8 @@ public class Controller {
     private final static String BASE_PATH = "sidis/eas";
 
     public Controller(NodeRPCConnection rpc) {
-        ServiceState.State.values();
-        ServiceState.StateTransition.values();
+        StateMachine.State.values();
+        StateMachine.StateTransition.values();
         if (DEBUG && rpc.proxy == null) {
             this.proxy = null;
             this.myLegalName = null;
@@ -286,14 +287,14 @@ public class Controller {
             @PathVariable("id") String id,
             @PathVariable("action") String action) {
 
-        ServiceState.State state = ServiceState.StateTransition.valueOf(action).getNextState();
+        StateMachine.State state = StateMachine.StateTransition.valueOf(action).getNextState();
         if (state == null) {
             return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
                     .body(new StateAndLinks<ServiceState>().error("illegal action <"+action+">. Method not allowed"));
         }
         UniqueIdentifier uid = new UniqueIdentifier(null, UUID.fromString(id));
         try {
-            if (state.equals(ServiceState.State.SHARED)) {
+            if (state.equals(StateMachine.State.SHARED)) {
                 if (serviceProvider == null || serviceProvider.isEmpty()) {
                     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                             .body(new StateAndLinks<ServiceState>().error("service-provider not specified in post"));
