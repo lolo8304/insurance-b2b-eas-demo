@@ -135,7 +135,7 @@ public class ServiceContractTests extends SidisBaseTests {
             ServiceState service2 = updateService(service1);
             tx.output(ServiceContract.ID, service2);
             tx.command(service2.getParticipantKeys(), new ServiceContract.Commands.Update());
-            tx.failsWith("List must contain only 1 entry");
+            tx.failsWith("List should not be empty");
             return null;
         });
 
@@ -149,7 +149,7 @@ public class ServiceContractTests extends SidisBaseTests {
             tx.input(ServiceContract.ID, service1);
             tx.output(ServiceContract.ID, service2);
             tx.command(service2.getParticipantKeys(), new ServiceContract.Commands.Update());
-            tx.failsWith("ID must be the same");
+            tx.fails();
             return null;
         });
     }
@@ -254,7 +254,7 @@ public class ServiceContractTests extends SidisBaseTests {
             ServiceState service2 = shareService(service1, this.insurance2.party);
             tx.output(ServiceContract.ID, service2);
             tx.command(service2.getParticipantKeys(), new ServiceContract.Commands.Share());
-            tx.failsWith("List must contain only 1 entry");
+            tx.failsWith("List should not be empty");
             return null;
         });
     }
@@ -321,7 +321,7 @@ public class ServiceContractTests extends SidisBaseTests {
             ServiceState service2 = withAction(service1, "WITHDRAW");
             tx.output(ServiceContract.ID, service2);
             tx.command(service2.getParticipantKeys(), new ServiceContract.Commands.ActionBeforeShare("WITHDRAW"));
-            tx.failsWith("List must contain only 1 entry");
+            tx.failsWith("List should not be empty");
             return null;
         });
     }
