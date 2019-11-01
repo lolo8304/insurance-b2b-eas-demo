@@ -284,7 +284,7 @@ function connectWebSocket() {
     stompClient.connect({}, function (frame) {
         setWebSocketConnected(true, false);
         console.log('Connected: ' + frame);
-        stompClient.subscribe('/topic/sidis/eas/vaultChanged', function (changes) {
+        stompClient.subscribe('/topic/vaultChanged/sidis/eas', function (changes) {
             get_services();
             animationOff();
         });
