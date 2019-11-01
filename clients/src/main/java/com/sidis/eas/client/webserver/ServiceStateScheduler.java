@@ -13,6 +13,6 @@ public class ServiceStateScheduler extends VaultChangeScheduler<ServiceState> {
 
     @PostConstruct
     public void installFeed() {
-        this.installVaultFeedAndSubscribeToTopic("/topic/sidis/eas/vaultChanged");
+        this.installVaultFeedAndSubscribeToTopic("/topic/vaultChanged/sidis/eas");
     }
 }
