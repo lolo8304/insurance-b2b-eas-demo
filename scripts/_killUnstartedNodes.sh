@@ -19,7 +19,7 @@ i=10103
 nodes=( $NodeNames )
 for $node in "${nodes[@]}"
 do
-  checkPorts $i node
+  checkPorts $i $node
   (( i=i+3 ))
 done
 ##checkPorts 10103 $NodeName0
