@@ -71,3 +71,8 @@ task runWebserver4(type: JavaExec, dependsOn: assemble) {
     main = 'com.sidis.eas.client.webserver.Starter'
     args '--server.port=10804', '--config.rpc.host=localhost', '--config.rpc.port=10015', '--config.rpc.username=user1', '--config.rpc.password=test'
 }
+task runWebserver5(type: JavaExec, dependsOn: assemble) {
+    classpath = sourceSets.main.runtimeClasspath
+    main = 'com.sidis.eas.client.webserver.Starter'
+    args '--server.port=10805', '--config.rpc.host=localhost', '--config.rpc.port=10018', '--config.rpc.username=user1', '--config.rpc.password=test'
+}

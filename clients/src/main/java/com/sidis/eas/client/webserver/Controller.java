@@ -74,7 +74,7 @@ public class Controller {
     private ResponseEntity<List<StateAndLinks<ServiceState>>> getResponse(HttpServletRequest request, List<ServiceState> list, HttpStatus status) throws URISyntaxException {
         return new StateBuilder<>(list, ResponseEntity.status(status))
                 .stateMapping(MAPPING_PATH, BASE_PATH, request)
-                .links("services", x -> x.getState().getNextActions())
+                .links( "services", x -> x.getState().getNextActions())
                 .self("services")
                 .buildList();
     }
@@ -175,7 +175,9 @@ public class Controller {
                     .startTrackedFlowDynamic(ServiceFlow.Delete.class, uid)
                     .getReturnValue()
                     .get();
+            this.messagingTemplate.convertAndSend("/topic/sidis/eas/services", "");
             return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null);
+
 
         } catch (Throwable ex) {
             logger.error(ex.getMessage(), ex);

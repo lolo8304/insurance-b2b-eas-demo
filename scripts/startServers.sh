@@ -2,7 +2,7 @@
 BASEDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 . $BASEDIR/env.sh
 cd $CORDA_HOME
-max_nof=4
+(( max_nof = NodeNof - 1 ))
 echo "Starting max $max_nof Webserver to CORDA"
 echo "----------------------------------------"
 
@@ -48,10 +48,17 @@ if [ "$retval" -eq $max_nof ]; then
 	exit 0
 fi
 
-nohup $CORDA_HOME/gradlew runWebserver1 >> nohup-runWebserver1.out 2>/dev/null &
-nohup $CORDA_HOME/gradlew runWebserver2 >> nohup-runWebserver2.out 2>/dev/null &
-nohup $CORDA_HOME/gradlew runWebserver3 >> nohup-runWebserver3.out 2>/dev/null &
-nohup $CORDA_HOME/gradlew runWebserver4 >> nohup-runWebserver4.out 2>/dev/null &
+n=1
+while [ $n -le $max_nof ]
+do
+    nohup $CORDA_HOME/gradlew runWebserver${n} >> nohup-runWebserver${n}.out 2>/dev/null &
+    (( n++ ))
+done
+
+#nohup $CORDA_HOME/gradlew runWebserver1 >> nohup-runWebserver1.out 2>/dev/null &
+#nohup $CORDA_HOME/gradlew runWebserver2 >> nohup-runWebserver2.out 2>/dev/null &
+#nohup $CORDA_HOME/gradlew runWebserver3 >> nohup-runWebserver3.out 2>/dev/null &
+#nohup $CORDA_HOME/gradlew runWebserver4 >> nohup-runWebserver4.out 2>/dev/null &
 
 echo "Wait 20s to spin up first log files"
 sleep 20s

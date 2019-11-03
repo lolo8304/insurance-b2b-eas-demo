@@ -13,34 +13,54 @@ function GETvar(parameterName) {
     });
     return result;
 }
-
-var s = "<frameset id='index_frames' cols='33%,33%,33%'>";
 var ports = "10801,10802,10803+10804";
+var page = "index.html";
 
 MAIN_URL = document.location.protocol + "//" + document.location.hostname
 var frames_param = GETvar("frames");
 if (frames_param == null) {
     frames_param = ports;
 }
+var page_param = GETvar("page");
+if (page_param == null) {
+    page_param = page;
+}
+if (page_param[0] != "/") {
+    page_param = "/"+page_param;
+}
+frames_paramArray=frames_param.split(",");
+var fraction = 100 / frames_paramArray.length;
+var cols="";
+for(var port in frames_paramArray) {
+    if (cols != "") { cols = cols+","; }
+    cols = cols + fraction+"%";
+}
+var stream = "<frameset id='index_frames' cols='"+cols+"'>";
 
 var frames = frames_param.split(",");
 for (k in frames) {
     var ports_vertical = frames[k].trim().split("+");
     if (ports_vertical.length > 1) {
-       s = s +"<frameset id='index_vertical_frames' rows='50%,50%'>"
-       for (pk in ports_vertical) {
-           var url = MAIN_URL + ":" + ports_vertical[pk].trim();
-            s = s + "<frame src='"+url+"'>";
-       }
-       s = s + "</frameset>";
+        var fraction = 100 / ports_vertical.length;
+        var cols="";
+        for(var port in ports_vertical) {
+            if (cols != "") { cols = cols+","; }
+            cols = cols + fraction+"%";
+        }
+        stream = stream +"<frameset id='index_vertical_frames' rows='"+cols+"'>"
+        for (pk in ports_vertical) {
+            var url = MAIN_URL + ":" + ports_vertical[pk].trim()+page_param;
+            stream = stream + "<frame src='"+url+"'>";
+        }
+        stream = stream + "</frameset>";
     } else {
-        var url = MAIN_URL + ":" + ports_vertical[0];
-        s = s + "<frame src='"+url+"'>";
+        var url = MAIN_URL + ":" + ports_vertical[0]+page_param;
+        stream = stream + "<frame src='"+url+"'>";
     }
 }
-s = s + "</frameset>";
+stream = stream + "</frameset>";
 
-document.write(s);
+document.write(stream);
 
 </script>
 </html>
