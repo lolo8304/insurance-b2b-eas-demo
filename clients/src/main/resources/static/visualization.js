@@ -278,7 +278,7 @@ function setWebSocketConnected(connected, running) {
 
 
 function connectWebSocket() {
-    var socket = new SockJS('/gs-guide-websocket');
+    var socket = new SockJS(MAIN_URL+'/gs-guide-websocket');
     stompClient = Stomp.over(socket);
     stompClient.debug = null;
     stompClient.connect({}, function (frame) {
