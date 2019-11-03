@@ -1,6 +1,10 @@
 #!/bin/bash
-sshpass -p test ssh user1@localhost -p 10103 -oStrictHostKeyChecking=accept-new -oUserKnownHostsFile=/dev/null
-sshpass -p test ssh user1@localhost -p 10106 -oStrictHostKeyChecking=accept-new -oUserKnownHostsFile=/dev/null
-sshpass -p test ssh user1@localhost -p 10109 -oStrictHostKeyChecking=accept-new -oUserKnownHostsFile=/dev/null
-sshpass -p test ssh user1@localhost -p 10112 -oStrictHostKeyChecking=accept-new -oUserKnownHostsFile=/dev/null
-sshpass -p test ssh user1@localhost -p 10115 -oStrictHostKeyChecking=accept-new -oUserKnownHostsFile=/dev/null
+
+i=10103
+nodes=( $NodeNames )
+for n in "${nodes[@]}"
+do
+  echo "check Node $n"
+  sshpass -p test ssh user1@localhost -p $i -oStrictHostKeyChecking=accept-new -oUserKnownHostsFile=/dev/null
+  (( i=i+3 ))
+done
