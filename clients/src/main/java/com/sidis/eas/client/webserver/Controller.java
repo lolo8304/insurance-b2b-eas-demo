@@ -41,7 +41,6 @@ import static java.util.stream.Collectors.toList;
  * https://www.toptal.com/java/stomp-spring-boot-websocket
  */
 @RestController
-@CrossOrigin(origins = "http://localhost:63342")
 @RequestMapping("/api/v1/") // The paths for HTTP requests are relative to this base path.
 public class Controller {
 
